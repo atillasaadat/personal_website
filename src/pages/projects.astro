@@ -1,0 +1,43 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+
+const posts = (await getCollection('posts')).sort(
+  (a, b) =>
+    b.data.date.valueOf() - a.data.date.valueOf() || a.id.localeCompare(b.id),
+);
+---
+<Base
+  title="Projects | Atilla Saadat"
+  description="Spacecraft GNC, ADCS, machine learning, and aerospace engineering projects by Atilla Saadat."
+>
+  <section class="container section">
+    <div class="section-head">
+      <p class="kicker">// MISSION LOG · {posts.length} ENTRIES</p>
+      <h2>Projects, Research & Experience</h2>
+    </div>
+    <div class="grid">
+      {posts.map((post) => (
+        <ProjectCard
+          href={`/post/${post.id}`}
+          title={post.data.title}
+          description={post.data.description}
+          date={post.data.date}
+          cover={post.data.cover}
+          tags={post.data.tags}
+          highlight={post.data.highlight}
+          highlightHref={post.data.highlightHref}
+        />
+      ))}
+    </div>
+  </section>
+</Base>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.4rem;
+  }
+</style>

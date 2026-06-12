@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>On-Orbit Assets</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.min.js"></script>
+  <style>
+    html, body { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+                 background: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    #cesiumContainer { width: 100%; height: 100%; }
+
+    #info-panel {
+      position: absolute; top: 14px; left: 14px; z-index: 50;
+      background: rgba(10, 14, 22, 0.78);
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      color: #e6edf3; padding: 14px 16px; border-radius: 10px;
+      font-size: 12px; line-height: 1.55; min-width: 240px; max-width: 300px;
+      border: 1px solid rgba(255,255,255,0.07);
+      box-shadow: 0 6px 22px rgba(0,0,0,0.45);
+    }
+    #info-panel h2 { margin: 0 0 10px 0; font-size: 11px; font-weight: 600;
+                      letter-spacing: 1.5px; color: #4fc3f7; text-transform: uppercase; }
+    .stat { display: flex; justify-content: space-between; gap: 16px; margin: 2px 0; }
+    .stat span:first-child { color: #8aa; }
+    .stat span:last-child { color: #fff; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .section { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.07); }
+    .section-title { color: #8aa; font-size: 10px; text-transform: uppercase;
+                      letter-spacing: 1px; margin-bottom: 5px; }
+    #decayed-items { font-size: 11px; line-height: 1.55;
+                      font-variant-numeric: tabular-nums; }
+    #decayed-items a { color: #ff9b9b; text-decoration: none; }
+    #decayed-items a:hover { color: #ffcfcf; text-decoration: underline; }
+    #data-source { font-size: 10px; color: #8aa; margin-top: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+                   box-shadow: 0 0 6px currentColor; }
+    .cesium-viewer-bottom { display: none !important; }
+    .cesium-viewer-toolbar { top: 14px !important; right: 14px !important; }
+    .cesium-infoBox { background: rgba(10, 14, 22, 0.92) !important;
+                       border: 1px solid rgba(79, 195, 247, 0.25) !important; border-radius: 8px !important; }
+    .cesium-infoBox-title { background: rgba(79, 195, 247, 0.12) !important;
+                             color: #4fc3f7 !important; font-weight: 600 !important; letter-spacing: 0.5px !important; }
+    .cesium-infoBox-iframe { background: transparent !important; }
+  </style>
+</head>
+<body>
+  <div id="info-panel">
+    <h2>On-Orbit Assets</h2>
+    <div class="stat"><span>On-Orbit</span><span id="count-active">&hellip;</span></div>
+    <div class="stat"><span>Decayed / Re-entered</span><span id="count-decayed">&hellip;</span></div>
+    <div class="section" id="decayed-section" style="display:none">
+      <div class="section-title">Decayed / Re-entered</div>
+      <div id="decayed-items"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">Legend</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#4fc3f7;color:#4fc3f7"></span><span>Turion Space</span></div>
+      <div class="legend-item"><span class="legend-dot" style="background:#ff6b6b;color:#ff6b6b"></span><span>Varda W-Series</span></div>
+      <div class="legend-item"><span class="legend-dot" style="background:#f59e0b;color:#f59e0b"></span><span>Hawkeye360 (UTIAS SFL)</span></div>
+      <div class="legend-item"><span class="legend-dot" style="background:#a3e635;color:#a3e635"></span><span>Other</span></div>
+    </div>
+    <div id="data-source"></div>
+  </div>
+  <div id="cesiumContainer"></div>
+
+  <script>
+    /* =========================================================================
+       TLE strategy:
+         1. Live fetch from Celestrak GP endpoint on page load (per NORAD ID).
+         2. Results cached in localStorage for 6 h to stay polite to Celestrak.
+         3. Per-satellite fallback to the embedded snapshot below if a fetch
+            fails (offline, CSP block, Celestrak down).
+       Celestrak returning "No GP data found" is treated as authoritative:
+       the object is no longer tracked, i.e. decayed / re-entered.
+       Refresh the fallback snapshot occasionally via tle-fetcher.html.
+       Each entry: NORAD_ID: [line1, line2, displayName]
+       ========================================================================= */
+    const FALLBACK_TLES = {
+      "52754": [
+        "1 52754U 22057Y   26134.87708550  .00012054  00000+0  21569-3 0  9992",
+        "2 52754  97.6544 292.4429 0004849 179.5391 180.5866 15.50142449221185",
+        "HAWK-5C"
+      ],
+      "52756": [
+        "1 52756U 22057AA  26134.94147587  .00012053  00000+0  21564-3 0  9993",
+        "2 52756  97.6555 290.8560 0005219 175.1710 184.9592 15.50143868221197",
+        "HAWK-5B"
+      ],
+      "52757": [
+        "1 52757U 22057AB  26134.94125134  .00012217  00000+0  21854-3 0  9992",
+        "2 52757  97.6550 291.6889 0005348 178.0767 182.0505 15.50143462221196",
+        "HAWK-5A"
+      ],
+      "55324": [
+        "1 55324U 23011A   26134.40773210  .00002876  00000+0  12931-3 0  9997",
+        "2 55324  40.4973 189.0486 0002854 178.3943 181.6876 15.22618421182693",
+        "HAWK-6B"
+      ],
+      "55326": [
+        "1 55326U 23011C   26134.53826295  .00002953  00000+0  13257-3 0  9993",
+        "2 55326  40.4964 185.1293 0002850 165.3079 194.7814 15.22620292182720",
+        "HAWK-6C"
+      ],
+      "55327": [
+        "1 55327U 23011D   26134.53830642  .00002939  00000+0  13195-3 0  9990",
+        "2 55327  40.4974 186.7506 0002563 165.1959 194.8925 15.22620540182722",
+        "HAWK-6A"
+      ],
+      "56191": [
+        "1 56191U 23054P   26134.62811649  .00003682  00000+0  14171-3 0  9994",
+        "2 56191  97.2745  22.8204 0004166 130.7776 229.3826 15.26985845171907",
+        "HAWK-7A"
+      ],
+      "56193": [
+        "1 56193U 23054R   26134.62804869  .00003682  00000+0  14173-3 0  9994",
+        "2 56193  97.2774  21.0723 0003184 130.9674 229.1842 15.26985456171900",
+        "HAWK-7B"
+      ],
+      "56200": [
+        "1 56200U 23054Y   26134.56239670  .00003604  00000+0  13874-3 0  9999",
+        "2 56200  97.2750  21.7876 0003592 125.2162 234.9414 15.26989587171897",
+        "HAWK-7C"
+      ],
+      "56965": [
+        "1 56965U 23084AK  26058.81992908  .07549833  26402-5  59223-3 0  9997",
+        "2 56965  97.5595 216.9968 0010265 275.4803  84.5325 16.40036814152128",
+        "DROID.001"
+      ],
+      "57392": [
+        "1 57392U 23100G   26134.62720110 -.00000043  00000+0  18791-5 0  9995",
+        "2 57392  99.5597 259.2681 0019143 102.1270 258.2021 13.68419895141051",
+        "LEO 3"
+      ],
+      "59443": [
+        "1 59443U 24066B   26134.92365844  .00000787  00000+0  82772-4 0  9991",
+        "2 59443  45.5947  88.5945 0003874 249.1717 110.8749 14.98998318114841",
+        "HAWK-8A"
+      ],
+      "59445": [
+        "1 59445U 24066D   26134.59086105  .00000817  00000+0  85236-4 0  9998",
+        "2 59445  45.6202  92.1532 0003935 250.8686 109.1770 14.98999954114788",
+        "HAWK-8B"
+      ],
+      "59446": [
+        "1 59446U 24066E   26134.94646578  .00000856  00000+0  88337-4 0  9992",
+        "2 59446  45.6098  89.0311 0003287 237.7501 122.3062 14.99029973114846",
+        "HAWK-9A"
+      ],
+      "59448": [
+        "1 59448U 24066G   26134.94673648  .00001024  00000+0  10196-3 0  9997",
+        "2 59448  45.5997  88.1610 0003098 224.1427 135.9207 14.99032655114846",
+        "HAWK-9C"
+      ],
+      "59449": [
+        "1 59449U 24066H   26134.92359729  .00000792  00000+0  83207-4 0  9992",
+        "2 59449  45.6078  89.5203 0003561 256.0411 104.0075 14.99000037114831",
+        "HAWK-8C"
+      ],
+      "59450": [
+        "1 59450U 24066J   26134.34700402  .00000752  00000+0  79847-4 0  9999",
+        "2 59450  45.6182  93.0357 0003416 217.2799 142.7846 14.99032616114750",
+        "HAWK-9B"
+      ],
+      "63223": [
+        "1 63223U 25052P   26134.63391936  .00003798  00000+0  16518-3 0  9996",
+        "2 63223  97.3976  27.9939 0002162 240.8376 119.2644 15.22866534 64761",
+        "DROID.002"
+      ],
+      "64543": [
+        "1 64543U 25135R   26134.94688761  .01066425  20092-5  58584-3 0  9998",
+        "2 64543  97.4448 245.9501 0457143 199.3058 159.0367 15.30590627 49478",
+        "W-SERIES 4"
+      ],
+      "66747": [
+        "1 66747U 25276CK  26029.50003471  .00061250  00000+0  19219-2 0  9998",
+        "2 66747  97.3254 105.2764 0377831  18.6804 254.3538 14.84484964  4380",
+        "W-SERIES 5"
+      ]
+    };
+
+    const SATELLITES = [
+      // Hawkeye360 RF satellites (built by UTIAS Space Flight Laboratory)
+      { id: 52757, group: 'hawkeye' },   // HAWK-5A
+      { id: 52756, group: 'hawkeye' },   // HAWK-5B
+      { id: 52754, group: 'hawkeye' },   // HAWK-5C
+      { id: 55327, group: 'hawkeye' },   // HAWK-6A
+      { id: 55324, group: 'hawkeye' },   // HAWK-6B
+      { id: 55326, group: 'hawkeye' },   // HAWK-6C
+      { id: 56191, group: 'hawkeye' },   // HAWK-7A
+      { id: 56193, group: 'hawkeye' },   // HAWK-7B
+      { id: 56200, group: 'hawkeye' },   // HAWK-7C
+      { id: 59443, group: 'hawkeye' },   // HAWK-8A
+      { id: 59445, group: 'hawkeye' },   // HAWK-8B
+      { id: 59449, group: 'hawkeye' },   // HAWK-8C
+      { id: 59446, group: 'hawkeye' },   // HAWK-9A
+      { id: 59450, group: 'hawkeye' },   // HAWK-9B
+      { id: 59448, group: 'hawkeye' },   // HAWK-9C
+      // Turion Space
+      { id: 56965, group: 'turion'  },   // DROID.001
+      { id: 63223, group: 'turion'  },   // DROID.002
+      // Varda W-Series
+      { id: 66747, group: 'varda'   },   // W-SERIES 5
+      { id: 64543, group: 'varda'   },   // W-SERIES 4
+      // Other
+      { id: 57392, group: 'other'   },   // LEO 3
+    ];
+
+    // ============================================================
+    //   Cesium viewer + pretty Earth setup
+    // ============================================================
+    if (Cesium.Ion) Cesium.Ion.defaultAccessToken = '';
+
+    // Base imagery: NaturalEarthII (bundled with Cesium, guaranteed to load
+    // even if the network is restricted, keeps us from ever showing a blank globe).
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      imageryProvider: new Cesium.TileMapServiceImageryProvider({
+        url: Cesium.buildModuleUrl('Assets/Textures/NaturalEarthII'),
+      }),
+      baseLayerPicker: false, geocoder: false, homeButton: false, infoBox: true,
+      navigationHelpButton: false, sceneModePicker: false, animation: true,
+      timeline: true, fullscreenButton: false, selectionIndicator: true, shouldAnimate: true,
+    });
+
+    // Overlay: ArcGIS World Imagery (free, no auth). Realistic satellite
+    // imagery, true-color continents, dark oceans, visible cloud cover where
+    // present. If the tiles fail to load (CSP, rate limit, server down), the
+    // NaturalEarthII base shows through with no visible breakage.
+    try {
+      const arcgis = new Cesium.ArcGisMapServerImageryProvider({
+        url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+      });
+      arcgis.errorEvent.addEventListener(function (err) {
+        // Non-fatal, base layer remains visible
+        console.warn('ArcGIS tile error (falling back to NaturalEarthII):', err && err.message);
+      });
+      viewer.imageryLayers.addImageryProvider(arcgis);
+    } catch (e) {
+      console.warn('ArcGIS provider unavailable:', e && e.message);
+    }
+
+    // ---- Sky / atmosphere tuning for a more cinematic look ----
+    const scene = viewer.scene;
+    scene.backgroundColor = Cesium.Color.fromCssColorString('#000308');
+
+    // Brighter, more saturated atmosphere limb glow. Cesium 1.81 supports
+    // brightnessShift / saturationShift / hueShift in [-1, 1].
+    if (scene.skyAtmosphere) {
+      scene.skyAtmosphere.show = true;
+      scene.skyAtmosphere.brightnessShift = 0.25;
+      scene.skyAtmosphere.saturationShift = 0.30;
+      scene.skyAtmosphere.hueShift = -0.02;
+    }
+
+    // Day/night terminator with proper sun-driven lighting.
+    scene.globe.enableLighting = true;
+    // Subtly adjust how the night side fades into shadow at far camera distance
+    // so the day/night terminator stays crisp at the 20-30 Mm view we use.
+    if ('nightFadeOutDistance' in scene.globe) {
+      scene.globe.nightFadeOutDistance = 4e7;
+      scene.globe.nightFadeInDistance  = 5e7;
+    }
+    // If this build supports dynamic atmosphere lighting, enable it for a
+    // sun-responsive limb glow. (Property added around Cesium 1.75.)
+    if ('dynamicAtmosphereLighting' in scene.globe) {
+      scene.globe.dynamicAtmosphereLighting = true;
+      scene.globe.dynamicAtmosphereLightingFromSun = false;
+    }
+
+    // Ensure sun, moon, and starfield are visible.
+    if (scene.sun)    scene.sun.show = true;
+    if (scene.moon)   scene.moon.show = true;
+    if (scene.skyBox) scene.skyBox.show = true;
+
+    // ---- Simulation clock ----
+    const SIM_DURATION_S = 6 * 3600;
+    const STEP_S = 120;
+    const start = Cesium.JulianDate.fromDate(new Date());
+    const stop  = Cesium.JulianDate.addSeconds(start, SIM_DURATION_S, new Cesium.JulianDate());
+    viewer.clock.startTime = start.clone();
+    viewer.clock.stopTime  = stop.clone();
+    viewer.clock.currentTime = start.clone();
+    viewer.clock.multiplier = 60;
+    viewer.clock.clockRange = Cesium.ClockRange.LOOP_STOP;
+    viewer.timeline.zoomTo(start, stop);
+
+    const COLORS = {
+      turion:  Cesium.Color.fromCssColorString('#4fc3f7'),
+      varda:   Cesium.Color.fromCssColorString('#ff6b6b'),
+      hawkeye: Cesium.Color.fromCssColorString('#f59e0b'),
+      other:   Cesium.Color.fromCssColorString('#a3e635'),
+    };
+
+    const decayed = [];   // entries: { id, name }
+    let activeCount = 0;
+
+    function field(line, s, e) { return line.substring(s - 1, e).trim(); }
+
+    // Parse the epoch field of TLE line 1 (columns 19-32, format YYDDD.DDDDDDDD)
+    // and return a JS Date in UTC.
+    function tleEpochDate(line1) {
+      const f = line1.substring(18, 32);
+      const yy = parseInt(f.substring(0, 2), 10);
+      const doy = parseFloat(f.substring(2));
+      if (!isFinite(yy) || !isFinite(doy)) return null;
+      const fullYear = yy < 57 ? 2000 + yy : 1900 + yy;
+      return new Date(Date.UTC(fullYear, 0, 1) + (doy - 1) * 86400 * 1000);
+    }
+    // Staleness is judged relative to the newest epoch in the working set,
+    // not the wall clock, so fallback data keeps working as it ages. Only
+    // entries lagging well behind the rest of the set get flagged.
+    const STALE_THRESHOLD_DAYS = 14;
+
+    // ============================================================
+    //   Live TLE loading: Celestrak GP query per NORAD ID,
+    //   localStorage cache (6 h), embedded fallback per satellite.
+    //   tles[id] semantics:
+    //     [l1, l2, name]  -> usable TLE (live or fallback)
+    //     null            -> Celestrak confirmed "No GP data" (decayed)
+    //     missing         -> fetch failed and no fallback exists
+    // ============================================================
+    const TLE_CACHE_KEY    = 'onorbit-tle-cache-v1';
+    const TLE_CACHE_TTL_MS = 6 * 3600 * 1000;
+    const FETCH_TIMEOUT_MS = 10000;
+
+    function fetchWithTimeout(url, ms) {
+      const ctrl = new AbortController();
+      const t = setTimeout(function () { ctrl.abort(); }, ms);
+      return fetch(url, { signal: ctrl.signal, cache: 'no-store' })
+        .finally(function () { clearTimeout(t); });
+    }
+
+    async function fetchLiveTLE(id) {
+      const url = 'https://celestrak.org/NORAD/elements/gp.php?CATNR=' + id + '&FORMAT=TLE';
+      const r = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const text = (await r.text()).trim();
+      if (/no gp data/i.test(text)) return null;   // object no longer tracked -> decayed
+      const lines = text.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+      const l1 = lines.find(function (s) { return s.indexOf('1 ') === 0; });
+      const l2 = lines.find(function (s) { return s.indexOf('2 ') === 0; });
+      if (!l1 || !l2) throw new Error('unparseable GP response');
+      return [l1, l2];
+    }
+
+    async function loadTLEs() {
+      // Serve from cache if fresh, keeps us polite to Celestrak.
+      try {
+        const c = JSON.parse(localStorage.getItem(TLE_CACHE_KEY) || 'null');
+        if (c && c.tles && (Date.now() - c.ts) < TLE_CACHE_TTL_MS) {
+          return { tles: c.tles, source: 'cached' };
+        }
+      } catch (e) { /* corrupted cache, refetch */ }
+
+      const tles = {};
+      let liveHits = 0;
+
+      await Promise.allSettled(SATELLITES.map(async function (meta) {
+        const fb = FALLBACK_TLES[meta.id];
+        try {
+          const res = await fetchLiveTLE(meta.id);
+          liveHits++;
+          if (res === null) {
+            tles[meta.id] = null;  // confirmed decayed
+          } else {
+            // Keep our friendly display name; Celestrak names can differ.
+            tles[meta.id] = [res[0], res[1], fb ? fb[2] : ('NORAD ' + meta.id)];
+          }
+        } catch (e) {
+          console.warn('TLE fetch failed for', meta.id, '- using fallback:', e && e.message);
+          if (fb) tles[meta.id] = fb.slice();
+        }
+      }));
+
+      // Only cache if at least one live fetch succeeded, so a total
+      // CSP/network failure doesn't poison the cache with pure-fallback
+      // data for 6 hours.
+      if (liveHits > 0) {
+        try { localStorage.setItem(TLE_CACHE_KEY, JSON.stringify({ ts: Date.now(), tles: tles })); }
+        catch (e) { /* storage full/unavailable, non-fatal */ }
+      }
+      return { tles: tles, source: liveHits > 0 ? 'live' : 'fallback' };
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c];
+      });
+    }
+
+    function satcatUrl(id) { return 'https://www.satcat.com/sats/' + id; }
+
+    function markDecayed(meta, tles) {
+      const entry = tles[meta.id] || FALLBACK_TLES[meta.id];
+      decayed.push({ id: meta.id, name: entry ? entry[2] : null });
+    }
+
+    function addSatellite(meta, tles, newestEpochMs) {
+      const entry = tles[meta.id];
+      if (!entry) return false;   // null (confirmed decayed) or missing entirely
+      const l1 = entry[0], l2 = entry[1];
+      const name = entry[2] || ('NORAD ' + meta.id);
+
+      // Relative staleness gate. Live TLEs are all near "now", so this only
+      // ever bites fallback entries that lag well behind the rest of the set
+      //, i.e. objects whose tracking stopped while others kept updating.
+      const epoch = tleEpochDate(l1);
+      if (epoch && newestEpochMs > 0) {
+        const ageDays = (newestEpochMs - epoch.getTime()) / 86400000;
+        if (ageDays > STALE_THRESHOLD_DAYS) return false;
+      }
+
+      let satrec;
+      try { satrec = satellite.twoline2satrec(l1.trim(), l2.trim()); }
+      catch (e) { return false; }
+
+      const positions = new Cesium.SampledPositionProperty();
+      let validSamples = 0;
+      for (let i = 0; i <= SIM_DURATION_S; i += STEP_S) {
+        const t = Cesium.JulianDate.addSeconds(start, i, new Cesium.JulianDate());
+        const d = Cesium.JulianDate.toDate(t);
+        const pv = satellite.propagate(satrec, d);
+        if (!pv || !pv.position || isNaN(pv.position.x)) continue;
+        const gmst = satellite.gstime(d);
+        const geo  = satellite.eciToGeodetic(pv.position, gmst);
+        if (!isFinite(geo.height) || geo.height < 80) continue;
+        positions.addSample(t, Cesium.Cartesian3.fromRadians(
+          geo.longitude, geo.latitude, geo.height * 1000));
+        validSamples++;
+      }
+      if (validSamples < 15) return false;
+      // Note: no setInterpolationOptions() call, Cesium's default linear
+      // interpolation is much lighter per frame than Lagrange polynomials.
+
+      const color = COLORS[meta.group] || COLORS.other;
+
+      const inc  = parseFloat(field(l2, 9, 16));
+      const raan = parseFloat(field(l2, 18, 25));
+      const ecc  = parseFloat('0.' + field(l2, 27, 33));
+      const argp = parseFloat(field(l2, 35, 42));
+      const ma   = parseFloat(field(l2, 44, 51));
+      const mm   = parseFloat(field(l2, 53, 63));
+      const period_s = 86400 / mm;
+      const sma = Math.pow(398600.4418 / Math.pow(2 * Math.PI / period_s, 2), 1/3);
+      const alt = sma - 6378.137;
+
+      const url = satcatUrl(meta.id);
+      viewer.entities.add({
+        name: name,
+        position: positions,
+        point: { pixelSize: 8, color: color,
+                  outlineColor: Cesium.Color.WHITE.withAlpha(0.85), outlineWidth: 1.5 },
+        label: {
+          text: name, font: '500 11px sans-serif', fillColor: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.fromCssColorString('#000510'), outlineWidth: 3,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          pixelOffset: new Cesium.Cartesian2(12, 0),
+          horizontalOrigin: Cesium.HorizontalOrigin.LEFT,
+          verticalOrigin: Cesium.VerticalOrigin.CENTER,
+          translucencyByDistance: new Cesium.NearFarScalar(1.5e7, 1.0, 6e7, 0.0),
+        },
+        path: {
+          resolution: 300,
+          material: new Cesium.PolylineGlowMaterialProperty({
+            glowPower: 0.18, color: color.withAlpha(0.7),
+          }),
+          width: 2, leadTime: 0, trailTime: period_s,
+        },
+        description:
+          '<table style="width:100%; color:#dbe4ee; font-size:12px; border-collapse:collapse;">' +
+            '<tr><td style="padding:4px 8px 4px 0; color:#8aa;">NORAD ID</td><td>' + meta.id + '</td></tr>' +
+            '<tr><td style="padding:4px 8px 4px 0; color:#8aa;">Inclination</td><td>' + inc.toFixed(4) + '&deg;</td></tr>' +
+            '<tr><td style="padding:4px 8px 4px 0; color:#8aa;">RAAN</td><td>' + raan.toFixed(4) + '&deg;</td></tr>' +
+            '<tr><td style="padding:4px 8px 4px 0; color:#8aa;">Eccentricity</td><td>' + ecc.toFixed(6) + '</td></tr>' +
+            '<tr><td style="padding:4px 8px 4px 0; color:#8aa;">Arg of Perigee</td><td>' + argp.toFixed(4) + '&deg;</td></tr>' +
+            '<tr><td style="padding:4px 8px 4px 0; color:#8aa;">Mean Anomaly</td><td>' + ma.toFixed(4) + '&deg;</td></tr>' +
+            '<tr><td style="padding:4px 8px 4px 0; color:#8aa;">Mean Motion</td><td>' + mm.toFixed(6) + ' rev/day</td></tr>' +
+            '<tr><td style="padding:4px 8px 4px 0; color:#8aa;">Period</td><td>' + (period_s/60).toFixed(2) + ' min</td></tr>' +
+            '<tr><td style="padding:4px 8px 4px 0; color:#8aa;">Semi-major axis</td><td>' + sma.toFixed(1) + ' km</td></tr>' +
+            '<tr><td style="padding:4px 8px 4px 0; color:#8aa;">Altitude (est.)</td><td>' + alt.toFixed(1) + ' km</td></tr>' +
+            '<tr><td style="padding:4px 8px 4px 0; color:#8aa;">Epoch</td><td>' + l1.substring(18, 32).trim() + '</td></tr>' +
+            '<tr><td style="padding:8px 8px 4px 0; color:#8aa;" colspan="2">' +
+              '<a href="' + url + '" target="_blank" rel="noopener noreferrer" ' +
+                 'style="color:#4fc3f7; text-decoration:none; font-weight:500;">' +
+                 'View on SatCat \u2192</a></td></tr>' +
+          '</table>',
+      });
+      activeCount++;
+      return true;
+    }
+
+    // ---- Async init: fetch TLEs, then populate the scene ----
+    (async function init() {
+      document.getElementById('count-active').textContent  = '\u2026';
+      document.getElementById('count-decayed').textContent = '\u2026';
+      document.getElementById('data-source').textContent   = 'Fetching latest orbital data\u2026';
+
+      const result = await loadTLEs();
+      const tles = result.tles;
+
+      // Newest epoch across the merged set drives the relative staleness gate.
+      let newestEpochMs = 0;
+      for (const id in tles) {
+        if (!tles[id]) continue;
+        const d = tleEpochDate(tles[id][0]);
+        if (d && d.getTime() > newestEpochMs) newestEpochMs = d.getTime();
+      }
+
+      for (let i = 0; i < SATELLITES.length; i++) {
+        const sat = SATELLITES[i];
+        if (!addSatellite(sat, tles, newestEpochMs)) markDecayed(sat, tles);
+      }
+
+      document.getElementById('count-active').textContent  = activeCount;
+      document.getElementById('count-decayed').textContent = decayed.length;
+
+      const srcLabel = {
+        live:     'Orbital data: Celestrak (live)',
+        cached:   'Orbital data: Celestrak (cached)',
+        fallback: 'Orbital data: embedded snapshot (offline)',
+      };
+      document.getElementById('data-source').textContent = srcLabel[result.source] || '';
+
+      if (decayed.length > 0) {
+        const html = decayed.map(function (d) {
+          const display = d.name
+            ? escapeHtml(d.name) + ' (' + d.id + ')'
+            : 'NORAD ' + d.id;
+          return '<a href="' + satcatUrl(d.id) + '" target="_blank" rel="noopener noreferrer">' +
+                 display + '</a>';
+        }).join(', ');
+        document.getElementById('decayed-section').style.display = 'block';
+        document.getElementById('decayed-items').innerHTML = html;
+      }
+    })();
+
+    // Camera: straight-down view. Closer (14 Mm) than the old 22 Mm so the
+    // globe fills most of the frame instead of floating small in black space.
+    // Flies immediately, no need to wait for TLEs.
+    viewer.scene.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(-30, 15, 14000000),
+      orientation: {
+        heading: 0.0,
+        pitch:   Cesium.Math.toRadians(-90),
+        roll:    0.0,
+      },
+      duration: 1.4,
+    });
+  </script>
+</body>
+</html>

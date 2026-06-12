@@ -1,0 +1,159 @@
+---
+// Live 3D on-orbit asset tracker, the satellites Atilla has contributed to.
+// Rendered by a self-contained CesiumJS globe at /satmap.html (live TLEs from
+// Celestrak with an embedded fallback snapshot).
+//
+// Performance: the globe is NOT loaded on initial page render. It auto-loads
+// the moment the section scrolls near the viewport (IntersectionObserver), so
+// the top of the page stays fast but the visitor never has to click anything.
+const satCount = 20;
+---
+<section id="satmap" class="section">
+  <div class="container">
+    <div class="section-head">
+      <p class="kicker">// ON ORBIT</p>
+      <h2>Live 3D Map of the {satCount} Launched Satellites I've Contributed To</h2>
+    </div>
+    <div class="map-shell hud-card" id="satmap-shell">
+      <div id="satmap-loading" class="loading">
+        <span class="spinner" aria-hidden="true"></span>
+        <span class="loading-text">Acquiring orbital data…</span>
+      </div>
+      <noscript>
+        <iframe
+          src="/satmap.html"
+          title="Live 3D satellite tracker"
+          style="position:absolute;inset:0;width:100%;height:100%;border:0;"
+        ></iframe>
+      </noscript>
+    </div>
+    <p class="ext">
+      <button type="button" id="satmap-fs" class="linkish" hidden>Fullscreen ⛶</button>
+      <a href="/satmap.html" target="_blank" rel="noopener">Open the tracker in a new tab ↗</a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .map-shell {
+    position: relative;
+    height: clamp(440px, 80vh, 920px);
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 45%, rgba(34, 60, 110, 0.35), transparent 60%),
+      var(--bg-1);
+  }
+  .loading[hidden] { display: none !important; }
+  .loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .spinner {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 3px solid rgba(94, 234, 212, 0.2);
+    border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+  .loading-text {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--text-1);
+    letter-spacing: 0.05em;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* fullscreen: let the globe fill the whole viewport */
+  .map-shell:fullscreen { height: 100%; width: 100%; border-radius: 0; }
+
+  .ext {
+    margin-top: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+  }
+  .linkish {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--accent);
+    font: inherit;
+    cursor: pointer;
+  }
+  .linkish:hover { text-decoration: underline; }
+</style>
+
+<script>
+  const ORIGINS = [
+    'https://cesium.com',
+    'https://cdnjs.cloudflare.com',
+    'https://celestrak.org',
+    'https://services.arcgisonline.com',
+  ];
+
+  const shell = document.getElementById('satmap-shell')!;
+  const loading = document.getElementById('satmap-loading')!;
+  const fsBtn = document.getElementById('satmap-fs') as HTMLButtonElement;
+
+  let loaded = false;
+  function loadGlobe() {
+    if (loaded) return;
+    loaded = true;
+
+    // open connections to the CDNs/data hosts a touch earlier
+    for (const origin of ORIGINS) {
+      const l = document.createElement('link');
+      l.rel = 'preconnect';
+      l.href = origin;
+      l.crossOrigin = '';
+      document.head.appendChild(l);
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.src = '/satmap.html';
+    iframe.title = 'Live 3D satellite tracker';
+    iframe.allow = 'fullscreen';
+    // Styles must be inline: Astro scopes its CSS to template elements, and a
+    // JS-created iframe never gets that scope, so a `.map-shell iframe` rule
+    // would NOT apply and the iframe would collapse to its default 300x150 box.
+    iframe.style.cssText =
+      'position:absolute;inset:0;width:100%;height:100%;border:0;z-index:1;';
+    iframe.addEventListener('load', () => {
+      // give Cesium a beat to paint the first frame before clearing the spinner
+      setTimeout(() => { loading.hidden = true; }, 700);
+    });
+    shell.appendChild(iframe);
+    fsBtn.hidden = false;
+  }
+
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          loadGlobe();
+          io.disconnect();
+        }
+      },
+      { rootMargin: '300px' },
+    );
+    io.observe(shell);
+  } else {
+    loadGlobe();
+  }
+
+  fsBtn.addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else shell.requestFullscreen?.();
+  });
+</script>

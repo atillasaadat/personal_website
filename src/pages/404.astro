@@ -1,0 +1,23 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="404 | Atilla Saadat" description="Page not found.">
+  <section class="container section center">
+    <p class="kicker">// SIGNAL LOST</p>
+    <h1>404</h1>
+    <p>This page has deorbited. Telemetry indicates it no longer exists.</p>
+    <p><a href="/">← Return to mission control</a></p>
+  </section>
+</Base>
+
+<style>
+  .center {
+    text-align: center;
+    min-height: 50vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  h1 { font-size: clamp(4rem, 14vw, 7rem); margin: 0.5rem 0; }
+  p { color: var(--text-1); }
+</style>

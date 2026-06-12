@@ -1,0 +1,63 @@
+---
+import '@fontsource/sora/600.css';
+import '@fontsource/sora/700.css';
+import '@fontsource-variable/ibm-plex-sans';
+import '@fontsource/ibm-plex-mono/400.css';
+import '../styles/global.css';
+import Starfield from '../components/Starfield.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+}
+
+const {
+  title,
+  description = 'Atilla Saadat, Spacecraft GNC Engineer. Portfolio of spacecraft guidance, navigation, and control projects, research, and awards.',
+  image = '/media/og-default.jpg',
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta name="generator" content={Astro.generator} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(image, Astro.site)} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:creator" content="@atillasaadat" />
+  </head>
+  <body>
+    <Starfield />
+    <Header />
+    <main>
+      <slot />
+    </main>
+    <Footer />
+    <script is:inline>
+      // Lightweight pageview beacon. The /track Function (Cloudflare Pages)
+      // records the visit with server-side geo. No-op in environments without
+      // the Function (e.g. `astro dev`).
+      try {
+        if (!/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) {
+          new Image().src = '/track?p=' + encodeURIComponent(location.pathname) + '&t=' + Date.now();
+        }
+      } catch (e) {}
+    </script>
+  </body>
+</html>

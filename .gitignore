@@ -1,0 +1,18 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# local archives (migration reference only, too large for the repo)
+site_files/
+scrape/
+
+# misc
+.DS_Store
+*.log
+
+# Cloudflare wrangler
+.wrangler/
+.dev.vars

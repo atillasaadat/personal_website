@@ -1,0 +1,13 @@
+# Cloudflare Pages + Functions configuration.
+# Used by the visitor-analytics Functions in /functions and for local dev.
+name = "atillasaadat-me"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "dist"
+
+# D1 (SQLite) database that stores pageview events.
+# Create it once with:  npx wrangler d1 create site-analytics
+# then paste the printed database_id below.
+[[d1_databases]]
+binding = "DB"
+database_name = "site-analytics"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"

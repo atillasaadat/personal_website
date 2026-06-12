@@ -1,0 +1,326 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import SatMap from '../components/SatMap.astro';
+
+const posts = (await getCollection('posts')).sort(
+  (a, b) =>
+    b.data.date.valueOf() - a.data.date.valueOf() || a.id.localeCompare(b.id),
+);
+
+const specialties = [
+  'Space Systems Engineering: Mission Design & Analysis',
+  'Attitude Determination & Control Systems (ADCS)',
+  'Guidance, Navigation, and Control (GNC)',
+  'Aerospace Avionics Engineering',
+  'Robotic Systems Dynamics Identification & Analysis',
+  'Full-Stack Software Engineering',
+  'Data Analysis & Machine Learning',
+  'Earth Observation Analysis',
+];
+
+const awardsData = [
+  {
+    date: '2024-10',
+    logo: '/media/awards/payload.png',
+    title: 'Payload Pioneer 30 Under 30',
+    body: 'Recognized by Payload’s “30 under 30” for achievements across the space industry, including innovation, advocacy, and leadership.',
+    href: 'https://payloadspace.com/atilla-saadat-turion-space/',
+    light: true,
+  },
+  {
+    date: '2024-09',
+    logo: '/media/awards/sspi.png',
+    title: 'SSPI 20 Under 35',
+    body: 'Awarded SSPI’s “20 Under 35” recognition for exceptional leadership, innovation, and contributions to the space and satellite industry.',
+    href: 'https://www.sspi.org/atilla-saadat',
+  },
+  {
+    date: '2022-08',
+    logo: '/media/awards/smallsat.png',
+    title: 'SmallSat 2022: Frank J. Redd Student Competition',
+    body: 'Awarded 1st place ($10,000) for Best Paper and Presentation at the Small Satellite Conference Frank J. Redd Student Competition.',
+    href: 'https://smallsat.org/students/previous-winners',
+    links: [{ label: 'Read the winning paper', href: 'https://digitalcommons.usu.edu/smallsat/2022/all2022/3/' }],
+  },
+  {
+    date: '2019-05',
+    logo: '/media/awards/oac.png',
+    title: 'Ontario Aerospace Council Scholarship',
+    body: 'Awarded $2,500 for outstanding work and leadership in Aerospace Engineering.',
+    href: 'http://www.uwindsor.ca/engineering/2019-07-02/aerospace-engineering-student-aiming-high',
+  },
+  {
+    date: '2019-01',
+    logo: '/media/awards/esa.png',
+    title: 'University of Windsor ESA Conference Fund',
+    body: 'Awarded $1,500 to attend the ESA Atlantic from Space Workshop to present CryoRoute.',
+    href: 'https://eo4society.esa.int/event/atlantic-from-space/',
+  },
+  {
+    date: '2017-03',
+    logo: '/media/awards/csa.png',
+    title: 'Canadian Space Agency Student Grant',
+    body: 'Awarded $4,000 to attend the ESA North-American CryoSat Science Meeting.',
+    href: 'https://www.asc-csa.gc.ca/eng/',
+    links: [{ label: 'CryoSat Science Meeting', href: 'https://nikal.eventsair.com/QuickEventWebsitePortal/north-american-cryosat-science-meeting/esa' }],
+  },
+  {
+    date: '2017-01',
+    logo: '/media/awards/epicentre.png',
+    title: 'Founders Program Series A Funding',
+    body: 'Awarded $5,000 Series-A funding from the UWindsor Winter Hackathon (diverted to WinSAT).',
+  },
+];
+
+const awards = awardsData
+  .sort((a, b) => b.date.localeCompare(a.date))
+  .map((a) => ({
+    ...a,
+    dateLabel: new Date(`${a.date}-01T00:00:00Z`).toLocaleDateString('en-US', {
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }),
+  }));
+---
+<Base title="Atilla Saadat | Spacecraft GNC Engineer" image="/media/profile.jpg">
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-text">
+        <p class="kicker">// SPACECRAFT GNC ENGINEER</p>
+        <h1>Atilla Saadat</h1>
+        <p class="lede">
+          Spacecraft GNC Engineer II at
+          <a href="https://www.varda.com" target="_blank" rel="noopener">Varda Space Industries</a>
+          in Los Angeles, and an M.S. Computer Science student at Georgia Tech
+          specializing in AI. I fly spacecraft, return them to Earth, and build
+          the autonomy that makes both routine.
+        </p>
+        <ul class="spec-list">
+          {specialties.map((s) => <li>{s}</li>)}
+        </ul>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="/projects">View Projects</a>
+          <a class="btn" href="/cv">Read CV</a>
+        </div>
+      </div>
+      <div class="hero-photo hud-card">
+        <img
+          src="/media/profile.jpg"
+          alt="Atilla Saadat"
+          width="480"
+          height="320"
+          fetchpriority="high"
+        />
+        <p class="photo-caption">
+          <span class="mono">SAADAT, ATILLA</span>
+          <span class="mono dim">VARDA SPACE INDUSTRIES · LOS ANGELES, CA</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROJECTS ============ -->
+  <section id="projects" class="section">
+    <div class="container">
+      <div class="section-head">
+        <p class="kicker">// MISSION LOG</p>
+        <h2>Projects, Research & Experience</h2>
+      </div>
+      <div class="grid">
+        {posts.map((post) => (
+          <ProjectCard
+            href={`/post/${post.id}`}
+            title={post.data.title}
+            description={post.data.description}
+            date={post.data.date}
+            cover={post.data.cover}
+            tags={post.data.tags}
+            highlight={post.data.highlight}
+            highlightHref={post.data.highlightHref}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SATELLITE MAP ============ -->
+  <SatMap />
+
+  <!-- ============ AWARDS ============ -->
+  <section id="awards" class="section">
+    <div class="container">
+      <div class="section-head">
+        <p class="kicker">// RECOGNITION</p>
+        <h2>Awards</h2>
+      </div>
+      <div class="grid awards-grid">
+        {awards.map(({ logo, title, body, href, links, dateLabel, light }) => (
+          <div class={`award hud-card${light ? ' light-logo' : ''}`}>
+            {href ? (
+              <a class="award-logo" href={href} target="_blank" rel="noopener" aria-label={title}>
+                <img src={logo} alt={title} loading="lazy" decoding="async" />
+              </a>
+            ) : (
+              <span class="award-logo">
+                <img src={logo} alt={title} loading="lazy" decoding="async" />
+              </span>
+            )}
+            <p class="award-date">{dateLabel}</p>
+            <h3>
+              {href ? <a href={href} target="_blank" rel="noopener">{title}</a> : title}
+            </h3>
+            <p>{body}</p>
+            {links && (
+              <p class="award-links">
+                {links.map((l) => (
+                  <a href={l.href} target="_blank" rel="noopener">{l.label} ↗</a>
+                ))}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* HERO */
+  .hero { padding-block: clamp(3.5rem, 9vw, 7rem) clamp(2rem, 5vw, 4rem); }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+  h1 {
+    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    margin: 0.5rem 0 1rem;
+    letter-spacing: -0.02em;
+  }
+  .lede {
+    font-size: 1.12rem;
+    color: var(--text-1);
+    max-width: 52ch;
+  }
+  .spec-list {
+    columns: 1;
+    list-style: none;
+    padding: 0;
+    margin: 1.75rem 0;
+  }
+  .spec-list li {
+    position: relative;
+    padding: 0.28rem 0 0.28rem 1.4rem;
+    color: var(--text-1);
+    font-size: 0.95rem;
+  }
+  .spec-list li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+  }
+  .hero-cta { display: flex; gap: 0.9rem; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    padding: 0.7rem 1.5rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-0);
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+  .btn:hover { text-decoration: none; border-color: var(--accent); color: var(--accent); }
+  .btn-primary {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-primary:hover { background: rgba(94, 234, 212, 0.25); }
+
+  .hero-photo { padding: 0.75rem; }
+  .hero-photo img {
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+  }
+  .photo-caption {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0.7rem 0.25rem 0.2rem;
+  }
+  .mono { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--text-1); }
+  .dim { color: var(--text-2); }
+
+  /* GRIDS */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.4rem;
+  }
+  .awards-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .award { padding: 1.4rem 1.5rem; }
+  /* logos normalized to a uniform HEIGHT (so they all read at the same size)
+     on a plate that hugs each one, so no logo floats small inside a wide box.
+     Light plate keeps dark logos legible; white logos (.light-logo) get a dark plate. */
+  .award-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 56px;
+    width: fit-content;
+    max-width: 100%;
+    padding: 8px 13px;
+    margin-bottom: 0.9rem;
+    border-radius: 8px;
+    background: #eef1f7;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: transform 0.2s ease;
+  }
+  .award.light-logo .award-logo {
+    background: #0b1322;
+    border-color: var(--line-strong);
+  }
+  .award-logo img {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+  }
+  .award-logo:hover { transform: translateY(-2px); }
+  .award-date {
+    margin: 0 0 0.35rem !important;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+  .award h3 { margin: 0 0 0.45rem; font-size: 1.02rem; }
+  .award h3 a { color: inherit; }
+  .award h3 a:hover { color: var(--accent); }
+  .award p { margin: 0; color: var(--text-1); font-size: 0.9rem; }
+  .award-links {
+    margin-top: 0.7rem !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+  }
+
+  @media (max-width: 860px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-photo { max-width: 480px; }
+  }
+</style>

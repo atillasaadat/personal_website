@@ -1,0 +1,31 @@
+---
+import Socials from './Socials.astro';
+const year = new Date().getFullYear();
+---
+<footer id="contact">
+  <div class="container">
+    <p class="kicker">// CONTACT</p>
+    <h2>Get in touch</h2>
+    <Socials />
+    <p class="fineprint">© {year} Atilla Saadat</p>
+  </div>
+</footer>
+
+<style>
+  footer {
+    border-top: 1px solid var(--line);
+    padding-block: 3.5rem;
+    margin-top: 4rem;
+    background: rgba(10, 16, 30, 0.5);
+  }
+  h2 {
+    margin: 0.4rem 0 1.5rem;
+    font-size: 1.5rem;
+  }
+  .fineprint {
+    margin-top: 2.5rem;
+    color: var(--text-2);
+    font-size: 0.85rem;
+  }
+  .mono { font-family: var(--font-mono); font-size: 0.78rem; }
+</style>

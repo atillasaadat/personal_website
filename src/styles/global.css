@@ -1,0 +1,300 @@
+/* ============================================================
+   Design tokens, space / GNC telemetry theme
+   ============================================================ */
+:root {
+  --bg-0: #05080f;
+  --bg-1: #0a101e;
+  --bg-2: #101a2e;
+  --surface: rgba(16, 26, 46, 0.6);
+  --line: rgba(126, 168, 255, 0.16);
+  --line-strong: rgba(126, 168, 255, 0.35);
+
+  --text-0: #e8eef9;
+  --text-1: #aab8d4;
+  --text-2: #6f7fa0;
+
+  --accent: #5eead4;        /* telemetry teal */
+  --accent-dim: rgba(94, 234, 212, 0.14);
+  --accent-2: #7ea8ff;      /* orbit blue */
+  --warn: #fbbf24;          /* award amber */
+
+  --font-display: 'Sora', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans Variable', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --radius: 10px;
+  --max-w: 1080px;
+  --header-h: 64px;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h) + 16px);
+}
+
+body {
+  margin: 0;
+  background: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  line-height: 1.2;
+  color: var(--text-0);
+  text-wrap: balance;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
+
+::selection { background: var(--accent-dim); color: var(--accent); }
+
+.container {
+  width: min(var(--max-w), 100% - 2.5rem);
+  margin-inline: auto;
+}
+
+/* mono micro-label, e.g. "// PROJECTS" */
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.section { padding-block: clamp(3.5rem, 8vw, 6rem); }
+
+.section-head { margin-bottom: 2.25rem; }
+.section-head h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  margin: 0.4rem 0 0;
+}
+
+/* HUD corner-bracket card */
+.hud-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  backdrop-filter: blur(8px);
+  transition: border-color 0.25s ease, transform 0.25s ease;
+}
+.hud-card::before, .hud-card::after {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  border: 1.5px solid var(--accent);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.hud-card::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; border-radius: var(--radius) 0 0 0; }
+.hud-card::after { bottom: -1px; right: -1px; border-left: 0; border-top: 0; border-radius: 0 0 var(--radius) 0; }
+.hud-card:hover { border-color: var(--line-strong); }
+.hud-card:hover::before, .hud-card:hover::after { opacity: 1; }
+
+/* ============================================================
+   Post / prose content
+   ============================================================ */
+.prose {
+  max-width: 760px;
+  margin-inline: auto;
+}
+.prose h2 { font-size: 1.55rem; margin-top: 2.5rem; }
+.prose h3 { font-size: 1.2rem; margin-top: 2rem; }
+.prose p, .prose li { color: var(--text-1); }
+.prose strong { color: var(--text-0); }
+.prose img, .prose video {
+  display: block;
+  margin: 1.75rem auto;
+  border: 1px solid var(--line);
+}
+
+/* Responsive 16:9 video embed (YouTube, etc.), use <div class="embed">…</div> */
+.prose .embed {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  margin: 1.75rem 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-1);
+}
+.prose .embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Image gallery (built client-side from runs of consecutive images).
+   One main stage + a scrollable thumbnail strip, caption space reserved. */
+.prose .gallery { margin: 2rem 0; }
+.prose .gallery-stage {
+  aspect-ratio: 16 / 9;
+  background: #05080f;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.prose .gallery-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  object-fit: contain;
+}
+.prose .gallery-caption {
+  min-height: 1.4em;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-2);
+  margin: 0.6rem 0 0.7rem;
+}
+.prose .gallery-thumbs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.prose .gallery-thumb {
+  flex: 0 0 auto;
+  width: 76px;
+  height: 56px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #05080f;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+.prose .gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+.prose .gallery-thumb.active,
+.prose .gallery-thumb:hover { opacity: 1; border-color: var(--accent); }
+.prose .gallery-count {
+  margin-top: 0.4rem;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-2);
+}
+
+/* Floated figures, let body text wrap around tall/portrait images.
+   Use <figure class="float-right"> (or float-left) in post markdown. */
+.prose figure { margin: 0; }
+.prose figure.float-right,
+.prose figure.float-left {
+  width: clamp(180px, 38%, 300px);
+  margin-block: 0.4rem 1rem;
+}
+.prose figure.float-right { float: right; margin-left: 1.6rem; }
+.prose figure.float-left  { float: left;  margin-right: 1.6rem; }
+/* start below any earlier float instead of squeezing text between two of them */
+.prose figure.clear-above { clear: both; }
+/* a smaller, centered figure (no wrap), clears any active float first */
+.prose figure.centered {
+  clear: both;
+  width: min(100%, 400px);
+  margin: 1.75rem auto;
+}
+.prose figure.centered img { width: 100%; margin: 0; }
+.prose figure.float-right img,
+.prose figure.float-left img {
+  width: 100%;
+  margin: 0;
+}
+.prose figure figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-2);
+  text-align: center;
+}
+/* On narrow screens, stop floating and just center the figure */
+@media (max-width: 600px) {
+  .prose figure.float-right,
+  .prose figure.float-left {
+    float: none;
+    width: min(78%, 320px);
+    margin-inline: auto;
+  }
+}
+.prose blockquote {
+  border-left: 2px solid var(--accent);
+  margin-inline: 0;
+  padding-left: 1.25rem;
+  color: var(--text-2);
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--bg-2);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+}
+.prose pre {
+  background: var(--bg-1) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+}
+.prose pre code { background: none; padding: 0; }
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+  margin-block: 1.5rem;
+  display: block;
+  overflow-x: auto;
+}
+.prose th, .prose td {
+  border: 1px solid var(--line);
+  padding: 0.55rem 0.8rem;
+  text-align: left;
+  color: var(--text-1);
+}
+.prose th { color: var(--text-0); background: var(--bg-1); font-family: var(--font-display); }
+.prose hr { border: 0; border-top: 1px solid var(--line); margin-block: 2.5rem; }
+
+/* ============================================================
+   Reduced motion
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

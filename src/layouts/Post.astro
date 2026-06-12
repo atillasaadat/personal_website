@@ -1,0 +1,173 @@
+---
+import Base from './Base.astro';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'posts'>;
+}
+
+const { post } = Astro.props;
+const { title, description, date, tags, cover, highlight, highlightHref } = post.data;
+const dateFmt = date.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+---
+<Base title={`${title} | Atilla Saadat`} description={description} image={cover}>
+  <article class="container section">
+    <header class="post-head prose">
+      <p class="kicker">
+        // PROJECT LOG &nbsp;·&nbsp; <time datetime={date.toISOString().slice(0, 10)}>{dateFmt}</time>
+      </p>
+      <h1>{title}</h1>
+      <p class="desc">{description}</p>
+      {highlight && (highlightHref
+        ? <p class="highlight"><a href={highlightHref} target="_blank" rel="noopener">★ {highlight} ↗</a></p>
+        : <p class="highlight">★ {highlight}</p>
+      )}
+      {tags.length > 0 && (
+        <ul class="tags">
+          {tags.map((t) => <li>{t}</li>)}
+        </ul>
+      )}
+    </header>
+    <div class="prose post-body">
+      <slot />
+    </div>
+    <nav class="post-foot prose">
+      <a href="/projects">← All projects</a>
+    </nav>
+  </article>
+</Base>
+
+<script>
+  // Turn runs of consecutive images into a gallery (main viewer + thumbnail
+  // strip). Consecutive duplicate images (a migration artifact) are collapsed.
+  function esc(s: string) {
+    return s.replace(/[&<>"]/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+  }
+
+  function isImageParagraph(el: Element): el is HTMLParagraphElement {
+    return (
+      el.tagName === 'P' &&
+      el.children.length === 1 &&
+      el.children[0].tagName === 'IMG' &&
+      el.textContent!.trim() === ''
+    );
+  }
+
+  function createGallery(imgs: { src: string; alt: string }[]) {
+    const g = document.createElement('div');
+    g.className = 'gallery';
+    g.tabIndex = 0;
+    g.innerHTML = `
+      <div class="gallery-stage">
+        <img class="gallery-img" src="${imgs[0].src}" alt="${esc(imgs[0].alt)}" />
+      </div>
+      <p class="gallery-caption">${esc(imgs[0].alt)}</p>
+      <div class="gallery-thumbs">
+        ${imgs
+          .map(
+            (im, k) =>
+              `<button class="gallery-thumb${k === 0 ? ' active' : ''}" data-i="${k}" aria-label="View image ${k + 1}"><img src="${im.src}" alt="" loading="lazy" /></button>`,
+          )
+          .join('')}
+      </div>
+      <p class="gallery-count"><span class="gi">1</span> / ${imgs.length}</p>`;
+
+    const mainImg = g.querySelector('.gallery-img') as HTMLImageElement;
+    const cap = g.querySelector('.gallery-caption') as HTMLElement;
+    const counter = g.querySelector('.gi') as HTMLElement;
+    const thumbs = Array.from(g.querySelectorAll('.gallery-thumb')) as HTMLButtonElement[];
+    let cur = 0;
+
+    function show(k: number) {
+      cur = (k + imgs.length) % imgs.length;
+      mainImg.src = imgs[cur].src;
+      mainImg.alt = imgs[cur].alt;
+      cap.textContent = imgs[cur].alt;
+      counter.textContent = String(cur + 1);
+      thumbs.forEach((t, ti) => t.classList.toggle('active', ti === cur));
+      thumbs[cur].scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    }
+
+    thumbs.forEach((t) => t.addEventListener('click', () => show(Number(t.dataset.i))));
+    g.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { show(cur - 1); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { show(cur + 1); e.preventDefault(); }
+    });
+    return g;
+  }
+
+  function buildGalleries() {
+    const prose = document.querySelector('.post-body');
+    if (!prose) return;
+    const nodes = Array.from(prose.children);
+    let i = 0;
+    while (i < nodes.length) {
+      if (!isImageParagraph(nodes[i])) { i++; continue; }
+      let j = i;
+      const imgs: { src: string; alt: string }[] = [];
+      while (j < nodes.length && isImageParagraph(nodes[j])) {
+        const img = nodes[j].children[0] as HTMLImageElement;
+        const src = img.getAttribute('src') || '';
+        const alt = img.getAttribute('alt') || '';
+        if (!imgs.length || imgs[imgs.length - 1].src !== src) imgs.push({ src, alt });
+        j++;
+      }
+      if (imgs.length >= 2) {
+        const run = nodes.slice(i, j);
+        prose.insertBefore(createGallery(imgs), run[0]);
+        run.forEach((el) => el.remove());
+      }
+      i = j;
+    }
+  }
+
+  buildGalleries();
+</script>
+
+<style>
+  .post-head { margin-bottom: 2.5rem; }
+  .post-head h1 {
+    font-size: clamp(1.7rem, 4.5vw, 2.5rem);
+    margin: 0.6rem 0;
+  }
+  .desc { color: var(--text-1); font-size: 1.08rem; margin: 0; }
+  .highlight {
+    color: var(--warn);
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    margin: 1rem 0 0;
+  }
+  .highlight a { color: var(--warn); text-decoration: none; }
+  .highlight a:hover { text-decoration: underline; text-underline-offset: 2px; }
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 1.25rem 0 0;
+  }
+  .tags li {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.2rem 0.7rem;
+  }
+  .post-foot {
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+  }
+</style>

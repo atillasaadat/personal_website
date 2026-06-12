@@ -1,0 +1,39 @@
+---
+title: "Mujin Inc. Internship - Dynamics Identification for Industrial Robotics"
+description: "Dynamics identification for industrial robotics: robotics systems engineering internship at Mujin Inc., Tokyo, Japan."
+date: 2018-05-05
+cover: "/media/covers/mujin-inc-internship-dynamics-identification-for-industrial-robotics.webp"
+tags: ["Robotics", "Dynamics", "Internship"]
+---
+
+At [Mujin Inc.](https://mujin-corp.com/) in Tokyo, Japan, I had the privilege to intern and contribute to groundbreaking robotic technology. I spearheaded the development of a robot dynamics identification feature for the Mujin Controller, touted as the "world's first AI-driven intelligent robot controller for motion planning". This enhanced feature refines the robot torque model, thereby optimizing motion planning.
+
+![](/media/mujin-inc-internship-dynamics-identification-for-industrial-robotics/img00.jpg)
+
+Friction Test Results with Friction Coefficient Estimates
+
+Specifically, it identifies and adjusts coefficients for:
+
+- Motor Friction (both viscous and coulomb)
+- Mass & Center of Mass (COM) for Links
+- Inertia Tensor
+
+You can see the prowess of this feature in the simulation video provided, which highlights automated inertia pose validation based on real-world experiments.
+
+<video controls preload="metadata" playsinline><source src="/media/mujin-inc-internship-dynamics-identification-for-industrial-robotics/vid00.mp4" type="video/mp4" /></video>
+
+Proudly, this feature transitioned from a conceptual phase to actual production and is now a staple in Mujin controllers, delivered to industry giants like [PALTAC](https://www.paltac.co.jp/), [Askul](https://www.askul.co.jp/), [JD.com](https://corporate.jd.com/), and more.
+
+<video controls preload="metadata" playsinline><source src="/media/mujin-inc-internship-dynamics-identification-for-industrial-robotics/vid01.mp4" type="video/mp4" /></video>
+
+![](/media/mujin-inc-internship-dynamics-identification-for-industrial-robotics/img01.jpg)
+
+COM visualization dev tool, shows Mass\*Center of Mass optimization possibilities
+
+Further accomplishments during my tenure included:
+
+- Integration of Mujin's advanced robot test trajectory generation.
+- Creation of bespoke data analysis, fitting, and optimization tools and algorithms.
+- Enhancement of user-centric data visualization tools, tailored specifically for dynamics validation.
+
+Short cameo of me working on dynamics identification feature @ 0:33 :)
