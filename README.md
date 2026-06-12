@@ -106,24 +106,29 @@ There is no unit-test suite. The build step is the gate.
 4. Click **Save and Deploy**. From now on, every `git push` to the main branch rebuilds and deploys the site.
 
 ### Set up visitor analytics (D1 database)
-Run these locally once (they talk to your Cloudflare account; `wrangler` will prompt you to log in):
+The D1 binding in `wrangler.toml` ships **commented out** so the site deploys before the database exists. Analytics stays dormant (the `/track` beacon records nothing, `/insights` shows zeros) until you enable it. To enable it, run these locally once (they talk to your Cloudflare account; `wrangler` will prompt you to log in):
 
 ```bash
-# Create the database
-npx wrangler d1 create site-analytics
-# -> copy the printed "database_id" into wrangler.toml (replace REPLACE_WITH_YOUR_D1_DATABASE_ID)
+# 1. Log in to Cloudflare
+npx wrangler login
 
-# Create the table in the live database
+# 2. Create the database (prints a database_id)
+npx wrangler d1 create site-analytics
+
+# 3. In wrangler.toml, UNCOMMENT the four [[d1_databases]] lines and paste the
+#    printed database_id in place of REPLACE_WITH_YOUR_D1_DATABASE_ID.
+
+# 4. Create the table in the live database
 npx wrangler d1 execute site-analytics --remote --file=./schema.sql
 
-# Commit the updated wrangler.toml and push
-git add wrangler.toml && git commit -m "add D1 id" && git push
+# 5. Commit and push so the next deploy picks up the binding
+git add wrangler.toml && git commit -m "enable analytics" && git push
 ```
 
 Then in the Cloudflare dashboard for your Pages project:
-1. **Settings, Bindings, Add, D1 database:** name it `DB`, choose `site-analytics`.
-2. **Settings, Variables and Secrets, Add:** add `ADMIN_PASSWORD` (the password for your private analytics page). Mark it as a **Secret**.
-3. Redeploy (Deployments, retry, or push a commit) so the bindings take effect.
+1. **Settings, Variables and Secrets, Add:** add `ADMIN_PASSWORD` (the password for your private analytics page at `/insights`). Mark it as a **Secret**, then redeploy (Deployments, retry latest) so it takes effect.
+
+> Note: because this project uses `wrangler.toml`, the D1 binding must live in that file (uncommented, with the real id), not in the dashboard Bindings tab. The dashboard Bindings tab is ignored when `wrangler.toml` is present.
 
 ### Connect your Namecheap domain
 Cloudflare Pages works best when Cloudflare also manages your DNS. This also enables the per-city visitor geo used by the analytics.
