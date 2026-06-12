@@ -5,19 +5,12 @@ compatibility_date = "2024-11-01"
 pages_build_output_dir = "dist"
 
 # ----------------------------------------------------------------------------
-# Visitor analytics database (D1). It is COMMENTED OUT so the site can deploy
-# before the database exists. The site and Functions work without it; the
-# /track beacon simply records nothing and /insights shows zeros until enabled.
-#
-# To turn analytics ON:
-#   1. npx wrangler login
-#   2. npx wrangler d1 create site-analytics
-#   3. Uncomment the four lines below and paste the printed database_id.
-#   4. npx wrangler d1 execute site-analytics --remote --file=./schema.sql
-#   5. git add wrangler.toml && git commit -m "enable analytics" && git push
-#   6. In the Pages dashboard add the ADMIN_PASSWORD secret (Settings > Variables).
+# Visitor analytics database (D1), read by the Functions as env.DB.
+# The binding name must stay "DB" (not the db-named binding that
+# `wrangler d1 create` suggests). Remember to apply schema.sql to this database:
+#   npx wrangler d1 execute site-analytics --remote --file=./schema.sql
 # ----------------------------------------------------------------------------
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "site-analytics"
-# database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+[[d1_databases]]
+binding = "DB"
+database_name = "site-analytics"
+database_id = "0da187dd-9078-4fe7-a03c-748dd9c75ad2"
