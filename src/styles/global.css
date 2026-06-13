@@ -137,6 +137,17 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
 }
 .prose figure.figure-single figcaption a { color: var(--accent-2); }
 
+/* Caption paragraph next to a video / embed (added by the post layout script). */
+.prose p.media-caption {
+  text-align: center;
+  color: var(--text-1);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  max-width: 46rem;
+  margin: 0.4rem auto 1.5rem;
+}
+.prose p.media-caption a { color: var(--accent-2); }
+
 /* Responsive 16:9 video embed (YouTube, etc.), use <div class="embed">…</div> */
 .prose .embed {
   position: relative;

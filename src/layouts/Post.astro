@@ -167,10 +167,63 @@ const dateFmt = date.toLocaleDateString('en-US', {
     });
   }
 
+  // Video / iframe-style media blocks (YouTube, Google Slides, LinkedIn/X embeds,
+  // and raw <video> tags). Standalone <img> captions are handled by buildFigures.
+  function isMediaNode(node: Element | null): boolean {
+    if (!node || node.nodeType !== 1) return false;
+    if (
+      node.classList.contains('embed') ||
+      node.classList.contains('slides') ||
+      node.classList.contains('li-embeds')
+    )
+      return true;
+    if (node.tagName === 'VIDEO') return true;
+    return (
+      node.tagName === 'P' &&
+      node.children.length === 1 &&
+      /^(VIDEO|IFRAME)$/.test(node.children[0].tagName)
+    );
+  }
+
+  // A caption next to a video/embed: a single-line paragraph whose text is
+  // wholly emphasized (every bit lives inside <em>/<strong>, links allowed), as
+  // opposed to body text which has bare words. Stricter than isCaptionParagraph
+  // so a body paragraph that merely sits beside an embed is not mistaken for one.
+  function isMediaCaption(node: Element | null): boolean {
+    if (!node || node.tagName !== 'P' || node.querySelector('img')) return false;
+    const txt = (node.textContent || '').trim();
+    if (!txt || /\n/.test(txt)) return false;
+    let hasEmph = false;
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === Node.TEXT_NODE) {
+        if ((child.textContent || '').trim() !== '') return false; // bare body text
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        const tag = (child as Element).tagName;
+        if (tag === 'EM' || tag === 'STRONG') hasEmph = true;
+        else if (tag !== 'A' && tag !== 'BR') return false;
+      }
+    }
+    return hasEmph;
+  }
+
+  // Center a caption paragraph that sits directly next to a media block, on
+  // either side (caption above or below the video/embed).
+  function centerMediaCaptions() {
+    const prose = document.querySelector('.post-body');
+    if (!prose) return;
+    Array.from(prose.children).forEach((node) => {
+      if (!isMediaCaption(node)) return;
+      if (isMediaNode(node.previousElementSibling) || isMediaNode(node.nextElementSibling)) {
+        node.classList.add('media-caption');
+      }
+    });
+  }
+
   // Re-run on every page view, including client-side navigations (ClientRouter).
   document.addEventListener('astro:page-load', () => {
     buildGalleries();
     buildFigures();
+    centerMediaCaptions();
   });
 </script>
 
