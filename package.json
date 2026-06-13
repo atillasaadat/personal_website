@@ -20,6 +20,8 @@
     "astro": "^5.0.0"
   },
   "devDependencies": {
-    "playwright": "^1.60.0"
+    "@resvg/resvg-js": "^2.6.2",
+    "playwright": "^1.60.0",
+    "satori": "^0.26.0"
   }
 }

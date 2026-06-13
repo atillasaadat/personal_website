@@ -167,8 +167,11 @@ const dateFmt = date.toLocaleDateString('en-US', {
     });
   }
 
-  buildGalleries();
-  buildFigures();
+  // Re-run on every page view, including client-side navigations (ClientRouter).
+  document.addEventListener('astro:page-load', () => {
+    buildGalleries();
+    buildFigures();
+  });
 </script>
 
 <style>

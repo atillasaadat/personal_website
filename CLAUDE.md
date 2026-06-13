@@ -10,8 +10,9 @@ Personal portfolio and project blog for Atilla Saadat, Spacecraft GNC Engineer I
 
 ## Stack
 
-- **Framework**: [Astro](https://astro.build), static output, content collections, zero JS by default.
+- **Framework**: [Astro](https://astro.build), static output, content collections, zero JS by default. Client-side routing via `<ClientRouter />` (view transitions) gives smooth cross-page transitions with no hard refresh; the animated `Starfield` canvas uses `transition:persist` so the background never restarts between pages. Per-page scripts (link sweep, pageview beacon, post galleries/figures, SatMap lazy-load) run on the `astro:page-load` event so they re-fire on every navigation.
 - **Content**: blog posts are markdown files in `src/content/posts/` with frontmatter (title, description, date, cover, tags). No raw HTML/CSS needed for content edits.
+- **Social cards**: dynamic Open Graph / Twitter images are generated at build time (satori + resvg) by the endpoint `src/pages/og/[...route].png.ts` using the template in `src/lib/og.ts`, one branded 1200x630 card per page/post (profile photo + a short gist). `Base.astro` maps each route to `/og/<route>.png` for the `og:image`/`twitter:image` meta. `functions/oembed.js` adds an oEmbed provider (discovery `<link>` in `Base.astro`) pointing at the same cards.
 - **Styling**: plain CSS with custom properties (design tokens) in `src/styles/`. No CSS framework.
 - **Deployment**: Cloudflare Pages, auto-builds from GitHub on every push to `main` (`npm run build`, output `dist`). Custom domain `atillasaadat.me` via Cloudflare DNS. See `README.md` for full setup.
 - **Analytics**: Cloudflare Pages Functions in `functions/` (`track.js` beacon + `insights.js` dashboard) backed by a D1 database (`wrangler.toml`, `schema.sql`). Private dashboard at `/insights` (Basic Auth, `ADMIN_PASSWORD` env var).

@@ -3,7 +3,7 @@
 // depth layers, with the occasional shooting star. Pure vanilla JS, pauses when
 // the tab is hidden, and falls back to a static field for reduced-motion users.
 ---
-<canvas id="starfield" aria-hidden="true"></canvas>
+<canvas id="starfield" aria-hidden="true" transition:persist="starfield"></canvas>
 
 <style>
   #starfield {

@@ -102,58 +102,65 @@ const satCount = 20;
     'https://services.arcgisonline.com',
   ];
 
-  const shell = document.getElementById('satmap-shell')!;
-  const loading = document.getElementById('satmap-loading')!;
-  const fsBtn = document.getElementById('satmap-fs') as HTMLButtonElement;
+  // Re-init on every page view so the globe still lazy-loads when this section
+  // arrives via a client-side navigation (ClientRouter), not just a full load.
+  function initSatMap() {
+    const shell = document.getElementById('satmap-shell');
+    const loading = document.getElementById('satmap-loading');
+    const fsBtn = document.getElementById('satmap-fs') as HTMLButtonElement | null;
+    if (!shell || !loading || !fsBtn) return;
 
-  let loaded = false;
-  function loadGlobe() {
-    if (loaded) return;
-    loaded = true;
+    let loaded = false;
+    function loadGlobe() {
+      if (loaded) return;
+      loaded = true;
 
-    // open connections to the CDNs/data hosts a touch earlier
-    for (const origin of ORIGINS) {
-      const l = document.createElement('link');
-      l.rel = 'preconnect';
-      l.href = origin;
-      l.crossOrigin = '';
-      document.head.appendChild(l);
+      // open connections to the CDNs/data hosts a touch earlier
+      for (const origin of ORIGINS) {
+        const l = document.createElement('link');
+        l.rel = 'preconnect';
+        l.href = origin;
+        l.crossOrigin = '';
+        document.head.appendChild(l);
+      }
+
+      const iframe = document.createElement('iframe');
+      iframe.src = '/satmap.html';
+      iframe.title = 'Live 3D satellite tracker';
+      iframe.allow = 'fullscreen';
+      // Styles must be inline: Astro scopes its CSS to template elements, and a
+      // JS-created iframe never gets that scope, so a `.map-shell iframe` rule
+      // would NOT apply and the iframe would collapse to its default 300x150 box.
+      iframe.style.cssText =
+        'position:absolute;inset:0;width:100%;height:100%;border:0;z-index:1;';
+      iframe.addEventListener('load', () => {
+        // give Cesium a beat to paint the first frame before clearing the spinner
+        setTimeout(() => { loading!.hidden = true; }, 700);
+      });
+      shell!.appendChild(iframe);
+      fsBtn!.hidden = false;
     }
 
-    const iframe = document.createElement('iframe');
-    iframe.src = '/satmap.html';
-    iframe.title = 'Live 3D satellite tracker';
-    iframe.allow = 'fullscreen';
-    // Styles must be inline: Astro scopes its CSS to template elements, and a
-    // JS-created iframe never gets that scope, so a `.map-shell iframe` rule
-    // would NOT apply and the iframe would collapse to its default 300x150 box.
-    iframe.style.cssText =
-      'position:absolute;inset:0;width:100%;height:100%;border:0;z-index:1;';
-    iframe.addEventListener('load', () => {
-      // give Cesium a beat to paint the first frame before clearing the spinner
-      setTimeout(() => { loading.hidden = true; }, 700);
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            loadGlobe();
+            io.disconnect();
+          }
+        },
+        { rootMargin: '300px' },
+      );
+      io.observe(shell);
+    } else {
+      loadGlobe();
+    }
+
+    fsBtn.addEventListener('click', () => {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else shell.requestFullscreen?.();
     });
-    shell.appendChild(iframe);
-    fsBtn.hidden = false;
   }
 
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          loadGlobe();
-          io.disconnect();
-        }
-      },
-      { rootMargin: '300px' },
-    );
-    io.observe(shell);
-  } else {
-    loadGlobe();
-  }
-
-  fsBtn.addEventListener('click', () => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else shell.requestFullscreen?.();
-  });
+  document.addEventListener('astro:page-load', initSatMap);
 </script>
