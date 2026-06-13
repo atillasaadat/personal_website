@@ -1,8 +1,8 @@
-# atillasaadat.me
+# atillasaadat.com
 
 Personal portfolio and project blog for Atilla Saadat, Spacecraft GNC Engineer. Built with [Astro](https://astro.build): a fast, static site where blog posts are plain Markdown files and the whole thing redeploys automatically when you push to GitHub.
 
-- **Live site:** https://atillasaadat.me
+- **Live site:** https://atillasaadat.com
 - **Stack:** Astro 5 (static output), vanilla CSS, a CesiumJS satellite globe, and Cloudflare Pages Functions + D1 for private visitor analytics.
 
 ---
@@ -130,19 +130,21 @@ Then in the Cloudflare dashboard for your Pages project:
 
 > Note: because this project uses `wrangler.toml`, the D1 binding must live in that file (uncommented, with the real id), not in the dashboard Bindings tab. The dashboard Bindings tab is ignored when `wrangler.toml` is present.
 
-### Connect your Namecheap domain
-Cloudflare Pages works best when Cloudflare also manages your DNS. This also enables the per-city visitor geo used by the analytics.
+### Connect your domain (`atillasaadat.com`, registered with Cloudflare)
+Because the domain was bought through **Cloudflare Registrar**, it is already in your Cloudflare account with Cloudflare managing its DNS, so there are **no nameservers to change**. You just attach it to the Pages project:
 
-1. In Cloudflare: **Add a site**, enter `atillasaadat.me`, choose the Free plan. Cloudflare scans your existing DNS and gives you **two nameservers** (for example `xxx.ns.cloudflare.com`).
-2. In **Namecheap, Domain List, Manage, Nameservers**, switch to **Custom DNS** and paste Cloudflare's two nameservers. Save. (DNS propagation can take a few minutes to a few hours.)
-3. Back in Cloudflare: **Workers & Pages, your project, Custom domains, Set up a custom domain**, enter `atillasaadat.me` (and `www.atillasaadat.me` if you want). Cloudflare adds the DNS records for you and provisions HTTPS automatically.
+1. In the Cloudflare dashboard, go to **Workers & Pages, your project, Custom domains, Set up a custom domain**.
+2. Enter `atillasaadat.com` and confirm. Cloudflare automatically adds the DNS record (pointing the domain at your `*.pages.dev` target) and provisions an HTTPS certificate, usually within a minute.
+3. Optionally repeat for `www.atillasaadat.com`. Cloudflare can redirect `www` to the apex for you.
 
-> Prefer not to move nameservers? You can instead keep Namecheap DNS and add a `CNAME` record pointing your domain at the Pages `*.pages.dev` URL, but moving nameservers to Cloudflare is simpler and is required for the city-level visitor geolocation to work.
+Because Cloudflare proxies the domain, the city/region/country visitor geolocation used by the analytics works automatically, with nothing extra to configure.
+
+> **Keeping the old `atillasaadat.me` working (optional).** If you still own the `.me` domain and want old links to keep resolving, either add `atillasaadat.me` as a second custom domain on the same Pages project, or, in the `atillasaadat.me` zone, add a **Redirect Rule** (Rules, Redirect Rules) that 301-redirects all traffic to `https://atillasaadat.com`. The site already treats both `.com` and `.me` hosts as internal links, so navigation stays consistent during the transition.
 
 ## 7. Visitor analytics (private dashboard)
 
 - Every page quietly loads `/track?p=<path>`, a Cloudflare Function that records the visit (path, an anonymous visitor cookie, and Cloudflare-provided city / region / country) into the D1 database. It never blocks or slows the page.
-- View the data at **https://atillasaadat.me/insights**. It is protected by HTTP Basic Auth:
+- View the data at **https://atillasaadat.com/insights**. It is protected by HTTP Basic Auth:
   - **Username:** `admin`
   - **Password:** whatever you set as `ADMIN_PASSWORD`
 - The dashboard shows unique visitors, total page views, unique pages, and a table of visits by city / region / country, with filters for **Today, Yesterday, Last 7 days, Last 30 days, Last year, and All time** (times in UTC). It is marked `noindex`, so search engines ignore it.

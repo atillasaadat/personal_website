@@ -87,7 +87,7 @@ const ogImage = new URL(`/og/${ogRoute}.png`, Astro.site);
         document.querySelectorAll('a[href]').forEach(function (a) {
           try {
             var u = new URL((a as HTMLAnchorElement).href, location.href);
-            var internal = u.host === location.host || /(^|\.)atillasaadat\.me$/.test(u.host);
+            var internal = u.host === location.host || /(^|\.)atillasaadat\.(com|me)$/.test(u.host);
             if (u.host && !internal) {
               (a as HTMLAnchorElement).target = '_blank';
               var rel = (a.getAttribute('rel') ? a.getAttribute('rel')!.split(/\s+/) : []);

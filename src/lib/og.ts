@@ -76,7 +76,7 @@ function card({ kicker, title, summary }: OgContent): Node {
           // Footer: site domain.
           h('div', { display: 'flex', alignItems: 'center', marginTop: '40px' }, [
             h('div', { display: 'flex', width: '14px', height: '14px', borderRadius: '9999px', background: TEAL, marginRight: '14px' }),
-            h('div', { display: 'flex', fontFamily: 'Mono', fontWeight: 600, fontSize: '26px', color: INK }, 'atillasaadat.me'),
+            h('div', { display: 'flex', fontFamily: 'Mono', fontWeight: 600, fontSize: '26px', color: INK }, 'atillasaadat.com'),
           ]),
         ],
       ),

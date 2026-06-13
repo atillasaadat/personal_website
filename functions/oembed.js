@@ -3,7 +3,7 @@
 //   GET /oembed?url=<page url>&format=json
 // The thumbnail maps to the build-time OG card at /og/<route>.png.
 
-const ORIGIN = 'https://atillasaadat.me';
+const ORIGIN = 'https://atillasaadat.com';
 
 const TITLES = {
   index: 'Atilla Saadat, Spacecraft GNC Engineer',

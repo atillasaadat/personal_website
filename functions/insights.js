@@ -162,7 +162,7 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
 </style>
 </head><body><div class="wrap">
   <h1>Visitor Insights</h1>
-  <p class="sub">atillasaadat.me &middot; ${esc(label)} &middot; times in UTC</p>
+  <p class="sub">atillasaadat.com &middot; ${esc(label)} &middot; times in UTC</p>
   <div class="controls">
     <div class="tabs">${tabs}</div>
     <form class="daterange" method="get">
