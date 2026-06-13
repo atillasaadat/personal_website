@@ -14,9 +14,9 @@ In this chapter, a data-driven approach for estimating the on-orbit inertia tens
 
 <video controls preload="metadata" playsinline><source src="/media/masc-thesis-ch-2-on-orbit-spacecraft-inertia-tensor-estimation/vid00.mp4" type="video/mp4" /></video>
 
-A [research paper](https://iafastro.directory/iac/paper/id/73225/summary/) based on this chapter was created and submitted to the IAC Student Competition, selected by the [**Canadian Space Agency**](https://www.asc-csa.gc.ca/) **as 1/2 papers across Canada to join the conference as a Canadian Delegate**!
+A [research paper](https://www.researchgate.net/publication/365595291_On-orbit_Spacecraft_Inertia_Tensor_Estimation) based on this chapter was created and submitted to the [IAC Student Competition](https://iafastro.directory/iac/paper/id/73225/summary/), selected by the [**Canadian Space Agency**](https://www.asc-csa.gc.ca/) **as 1/2 papers across Canada to join the conference as a Canadian Delegate**!
 
-![](/media/masc-thesis-ch-2-on-orbit-spacecraft-inertia-tensor-estimation/img00.jpg)
+![Picture with Lisa Campbell, President of the Canadian Space Agency](/media/masc-thesis-ch-2-on-orbit-spacecraft-inertia-tensor-estimation/img00.jpg)
 
 ![](/media/masc-thesis-ch-2-on-orbit-spacecraft-inertia-tensor-estimation/img00.jpg)
 

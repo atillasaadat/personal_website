@@ -20,11 +20,11 @@ Specifically, it identifies and adjusts coefficients for:
 
 You can see the prowess of this feature in the simulation video provided, which highlights automated inertia pose validation based on real-world experiments.
 
-<video controls preload="metadata" playsinline><source src="/media/mujin-inc-internship-dynamics-identification-for-industrial-robotics/vid00.mp4" type="video/mp4" /></video>
+<video controls autoplay muted playsinline preload="metadata"><source src="/media/mujin-inc-internship-dynamics-identification-for-industrial-robotics/vid00.mp4" type="video/mp4" /></video>
 
 Proudly, this feature transitioned from a conceptual phase to actual production and is now a staple in Mujin controllers, delivered to industry giants like [PALTAC](https://www.paltac.co.jp/), [Askul](https://www.askul.co.jp/), [JD.com](https://corporate.jd.com/), and more.
 
-<video controls preload="metadata" playsinline><source src="/media/mujin-inc-internship-dynamics-identification-for-industrial-robotics/vid01.mp4" type="video/mp4" /></video>
+<video controls autoplay muted playsinline preload="metadata"><source src="/media/mujin-inc-internship-dynamics-identification-for-industrial-robotics/vid01.mp4" type="video/mp4" /></video>
 
 ![](/media/mujin-inc-internship-dynamics-identification-for-industrial-robotics/img01.jpg)
 
@@ -37,3 +37,5 @@ Further accomplishments during my tenure included:
 - Enhancement of user-centric data visualization tools, tailored specifically for dynamics validation.
 
 Short cameo of me working on dynamics identification feature @ 0:33 :)
+
+<div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/uyeKGPHGW_A?start=33" title="Mujin Inc. robot controller video" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>

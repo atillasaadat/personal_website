@@ -49,7 +49,7 @@ function esc(v) {
   );
 }
 
-function page({ range, fromStr, toStr, label, totals, geo, topPages, countries }) {
+function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities }) {
   const today = ymd(Date.now());
 
   const tabs = RANGES.map(
@@ -79,14 +79,26 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries }
         .join('')
     : '<tr><td colspan="3" class="empty">No data.</td></tr>';
 
-  // map data keyed by ISO-2 country code
-  const mapData = {};
+  // Choropleth values keyed by ISO-2 country code.
+  const mapCountries = {};
   let maxVisitors = 0;
   for (const c of countries) {
     if (!c.country) continue;
-    mapData[c.country] = { v: c.visitors, w: c.views };
+    mapCountries[c.country] = { v: c.visitors, w: c.views };
     if (c.visitors > maxVisitors) maxVisitors = c.visitors;
   }
+
+  // Marker layers for finer levels; each needs coordinates from Cloudflare geo.
+  const toMarkers = (rows, nameOf) =>
+    rows
+      .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng))
+      .map((r) => ({ name: nameOf(r), coords: [r.lat, r.lng], v: r.visitors, w: r.views }));
+
+  const mapData = {
+    countries: mapCountries,
+    regions: toMarkers(regions, (r) => [r.region, r.country].filter(Boolean).join(', ')),
+    cities: toMarkers(cities, (r) => [r.city, r.region, r.country].filter(Boolean).join(', ')),
+  };
 
   return `<!doctype html>
 <html lang="en"><head>
@@ -119,6 +131,12 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries }
   .card .n { font-size:1.9rem; font-weight:700; font-variant-numeric:tabular-nums; }
   .card .l { color:#aab8d4; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.08em; }
   h2 { font-size:1rem; margin:1.75rem 0 0.6rem; color:#aab8d4; }
+  .maphead { display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem; }
+  .levels { display:flex; gap:0.35rem; margin-left:auto; }
+  .lvl { padding:0.3rem 0.75rem; border:1px solid rgba(126,168,255,0.2); border-radius:999px;
+         background:transparent; color:#aab8d4; font:inherit; font-size:0.78rem; cursor:pointer; }
+  .lvl:hover { border-color:#5eead4; color:#5eead4; }
+  .lvl.active { background:rgba(94,234,212,0.14); border-color:#5eead4; color:#5eead4; }
   #map { width:100%; height:460px; background:rgba(16,26,46,0.4);
          border:1px solid rgba(126,168,255,0.16); border-radius:10px; }
   .legend { display:flex; align-items:center; gap:0.6rem; margin-top:0.6rem; font-size:0.74rem; color:#aab8d4; }
@@ -129,6 +147,14 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries }
   th { color:#aab8d4; font-weight:600; font-size:0.74rem; text-transform:uppercase; letter-spacing:0.06em; }
   td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
   .empty { color:#aab8d4; text-align:center; padding:1.25rem; }
+  .danger { display:flex; flex-wrap:wrap; align-items:center; gap:1rem; justify-content:space-between;
+            margin-top:3rem; padding:1.1rem 1.25rem; border:1px solid rgba(248,113,113,0.35);
+            border-radius:10px; background:rgba(248,113,113,0.06); }
+  .danger strong { color:#fca5a5; }
+  .danger p { margin:0.2rem 0 0; color:#aab8d4; font-size:0.82rem; }
+  .danger button { background:rgba(248,113,113,0.14); color:#fca5a5; border:1px solid #f87171;
+            border-radius:8px; padding:0.5rem 1.1rem; font:inherit; cursor:pointer; }
+  .danger button:hover { background:rgba(248,113,113,0.28); color:#fff; }
   .jvm-tooltip { background:#0c1322 !important; border:1px solid #5eead4 !important;
                  color:#e8eef9 !important; border-radius:6px !important; }
   .jvm-zoom-btn { background:#16243f !important; color:#e8eef9 !important; border-radius:5px; }
@@ -150,10 +176,20 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries }
     <div class="card"><div class="n">${totals.views}</div><div class="l">Page views</div></div>
     <div class="card"><div class="n">${totals.pages}</div><div class="l">Unique pages</div></div>
   </div>
-  <h2>Visitor map</h2>
+  <div class="maphead">
+    <h2>Visitor map</h2>
+    <div class="levels">
+      <button type="button" class="lvl active" data-level="countries">Country</button>
+      <button type="button" class="lvl" data-level="regions">Region</button>
+      <button type="button" class="lvl" data-level="cities">City</button>
+    </div>
+  </div>
   <div id="map"></div>
-  <div class="legend"><span>Fewer</span><span class="bar"></span><span>More visitors</span>
-    <span style="margin-left:auto">Peak: ${maxVisitors} in one country</span></div>
+  <div class="legend">
+    <span id="legend-choro"><span>Fewer</span><span class="bar"></span><span>More visitors</span></span>
+    <span id="legend-marker" hidden>Each dot is one location, sized by visitors</span>
+    <span style="margin-left:auto" id="legend-peak">Peak: ${maxVisitors} in one country</span>
+  </div>
   <h2>By location</h2>
   <table>
     <thead><tr><th>Country</th><th>Region</th><th>City</th><th class="num">Visitors</th><th class="num">Views</th></tr></thead>
@@ -164,17 +200,42 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries }
     <thead><tr><th>Path</th><th class="num">Visitors</th><th class="num">Views</th></tr></thead>
     <tbody>${pageRows}</tbody>
   </table>
+  <div class="danger">
+    <div>
+      <strong>Clear all data</strong>
+      <p>Permanently deletes every recorded visit across all dates. This cannot be undone.</p>
+    </div>
+    <form method="post" onsubmit="return confirm('Permanently delete ALL recorded visits? This cannot be undone.');">
+      <input type="hidden" name="action" value="clear" />
+      <button type="submit">Clear all visits</button>
+    </form>
+  </div>
 </div>
 <script>window.__MAP__ = ${JSON.stringify(mapData)};</script>
 <script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/js/jsvectormap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/maps/world.js"></script>
 <script>
   (function () {
-    var data = window.__MAP__ || {};
-    var values = {};
-    for (var k in data) values[k] = data[k].v;
-    try {
-      new jsVectorMap({
+    var DATA = window.__MAP__ || { countries: {}, regions: [], cities: [] };
+    var el = document.getElementById('map');
+    var map = null;
+    var level = 'countries';
+
+    // Scale marker radius (4..14px) by visitor count within the current layer.
+    function markerLayer(rows) {
+      var max = 1;
+      for (var i = 0; i < rows.length; i++) if (rows[i].v > max) max = rows[i].v;
+      return rows.map(function (r) {
+        var radius = 4 + Math.round(10 * Math.sqrt(r.v / max));
+        return { name: r.name, coords: r.coords, v: r.v, w: r.w, style: { r: radius } };
+      });
+    }
+
+    function build(lvl) {
+      if (map) { try { map.destroy(); } catch (e) {} map = null; }
+      el.innerHTML = '';
+
+      var common = {
         selector: '#map',
         map: 'world',
         zoomButtons: true,
@@ -183,29 +244,68 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries }
           initial: { fill: '#16243f', stroke: '#0a101e', strokeWidth: 0.4 },
           hover: { fill: '#7ea8ff' },
         },
-        series: {
-          regions: [{
+      };
+
+      if (lvl === 'countries') {
+        var data = DATA.countries || {};
+        var values = {};
+        for (var k in data) values[k] = data[k].v;
+        map = new jsVectorMap(Object.assign({}, common, {
+          series: { regions: [{
             attribute: 'fill',
             scale: ['#1b3a5b', '#5eead4'],
             normalizeFunction: 'polynomial',
             values: values,
-          }],
-        },
-        onRegionTooltipShow: function (event, tooltip, code) {
-          var d = data[code];
-          if (d) tooltip.text(tooltip.text() + ': ' + d.v + ' visitors, ' + d.w + ' views', true);
-        },
-      });
-    } catch (e) {
-      document.getElementById('map').innerHTML =
-        '<p style="padding:1rem;color:#aab8d4">Map could not load.</p>';
+          }] },
+          onRegionTooltipShow: function (event, tooltip, code) {
+            var d = data[code];
+            if (d) tooltip.text(tooltip.text() + ': ' + d.v + ' visitors, ' + d.w + ' views', true);
+          },
+        }));
+      } else {
+        var markers = markerLayer(DATA[lvl] || []);
+        map = new jsVectorMap(Object.assign({}, common, {
+          markers: markers,
+          markerStyle: {
+            initial: { fill: '#5eead4', stroke: '#05221f', strokeWidth: 1.2, fillOpacity: 0.8 },
+            hover: { fill: '#a7f3e4', stroke: '#05221f' },
+          },
+          onMarkerTooltipShow: function (event, tooltip, index) {
+            var m = markers[index];
+            if (m) tooltip.text(m.name + ': ' + m.v + ' visitors, ' + m.w + ' views', true);
+          },
+        }));
+      }
     }
+
+    function setLevel(lvl) {
+      level = lvl;
+      var btns = document.querySelectorAll('.lvl');
+      for (var i = 0; i < btns.length; i++)
+        btns[i].classList.toggle('active', btns[i].getAttribute('data-level') === lvl);
+      document.getElementById('legend-choro').hidden = lvl !== 'countries';
+      document.getElementById('legend-marker').hidden = lvl === 'countries';
+      var peak = document.getElementById('legend-peak');
+      if (lvl === 'countries') peak.hidden = false;
+      else { var n = (DATA[lvl] || []).length; peak.textContent = n + ' located ' + (n === 1 ? lvl.slice(0, -1) : lvl); }
+      try { build(lvl); } catch (e) {
+        el.innerHTML = '<p style="padding:1rem;color:#aab8d4">Map could not load.</p>';
+      }
+    }
+
+    var btns = document.querySelectorAll('.lvl');
+    for (var i = 0; i < btns.length; i++)
+      btns[i].addEventListener('click', function () { setLevel(this.getAttribute('data-level')); });
+
+    setLevel('countries');
   })();
 </script>
 </body></html>`;
 }
 
-export async function onRequestGet({ request, env }) {
+// Basic-auth gate shared by the dashboard (GET) and the clear-data action
+// (POST). Returns a Response to short-circuit, or null when authorized.
+function authGate(request, env) {
   if (!env.ADMIN_PASSWORD) {
     return new Response('Set the ADMIN_PASSWORD environment variable to enable /insights.', {
       status: 500,
@@ -219,6 +319,33 @@ export async function onRequestGet({ request, env }) {
       headers: { 'WWW-Authenticate': 'Basic realm="insights", charset="UTF-8"' },
     });
   }
+  return null;
+}
+
+// POST /insights with action=clear wipes all recorded visits. Behind the same
+// Basic Auth as the dashboard; the UI also requires an explicit confirmation.
+export async function onRequestPost({ request, env }) {
+  const gate = authGate(request, env);
+  if (gate) return gate;
+
+  const form = await request.formData().catch(() => null);
+  if (!form || form.get('action') !== 'clear') {
+    return new Response('Bad request.', { status: 400 });
+  }
+
+  try {
+    if (env.DB) await env.DB.prepare('DELETE FROM pageviews').run();
+  } catch (e) {
+    // ignore: e.g. table not created yet
+  }
+
+  // Redirect back to the dashboard so a refresh shows the now-empty data.
+  return new Response(null, { status: 303, headers: { Location: '/insights' } });
+}
+
+export async function onRequestGet({ request, env }) {
+  const gate = authGate(request, env);
+  if (gate) return gate;
 
   const url = new URL(request.url);
 
@@ -245,12 +372,13 @@ export async function onRequestGet({ request, env }) {
 
   const db = env.DB;
   const empty = { visitors: 0, views: 0, pages: 0 };
-  const render = (totals, geo, topPages, countries) =>
-    new Response(page({ range, fromStr, toStr, label, totals, geo, topPages, countries }), {
-      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
-    });
+  const render = (totals, geo, topPages, countries, regions, cities) =>
+    new Response(
+      page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities }),
+      { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } },
+    );
 
-  if (!db) return render(empty, [], [], []);
+  if (!db) return render(empty, [], [], [], [], []);
 
   try {
     const totals =
@@ -288,9 +416,40 @@ export async function onRequestGet({ request, env }) {
       .bind(start, end)
       .all();
 
-    return render(totals, geo.results || [], pages.results || [], countries.results || []);
+    // Marker layers: one point per region / city, placed at the average
+    // Cloudflare-reported coordinate for that place.
+    const regions = await db
+      .prepare(
+        `SELECT region, country, AVG(lat) AS lat, AVG(lng) AS lng,
+                COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
+         FROM pageviews
+         WHERE ts >= ? AND ts < ? AND lat IS NOT NULL AND region IS NOT NULL AND region != ''
+         GROUP BY country, region ORDER BY visitors DESC LIMIT 500`,
+      )
+      .bind(start, end)
+      .all();
+
+    const cities = await db
+      .prepare(
+        `SELECT city, region, country, AVG(lat) AS lat, AVG(lng) AS lng,
+                COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
+         FROM pageviews
+         WHERE ts >= ? AND ts < ? AND lat IS NOT NULL AND city IS NOT NULL AND city != ''
+         GROUP BY country, region, city ORDER BY visitors DESC LIMIT 1000`,
+      )
+      .bind(start, end)
+      .all();
+
+    return render(
+      totals,
+      geo.results || [],
+      pages.results || [],
+      countries.results || [],
+      regions.results || [],
+      cities.results || [],
+    );
   } catch (e) {
     // most likely: schema.sql not applied yet (no such table: pageviews)
-    return render(empty, [], [], []);
+    return render(empty, [], [], [], [], []);
   }
 }

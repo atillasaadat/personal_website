@@ -127,7 +127,48 @@ const dateFmt = date.toLocaleDateString('en-US', {
     }
   }
 
+  // A paragraph immediately after a lone image is treated as its caption when
+  // it is wholly emphasized (*italic* / **bold**) or short and single-line.
+  function isCaptionParagraph(el: Element | null): el is HTMLParagraphElement {
+    if (!el || el.tagName !== 'P' || el.querySelector('img')) return false;
+    const txt = (el.textContent || '').trim();
+    if (!txt || /\n/.test(txt)) return false;
+    const onlyEmph =
+      el.children.length === 1 &&
+      /^(EM|STRONG)$/.test(el.children[0].tagName) &&
+      (el.children[0].textContent || '').trim() === txt;
+    return onlyEmph || txt.length <= 200;
+  }
+
+  // Wrap each remaining standalone image in a <figure> and attach a centered
+  // <figcaption> (from the following caption paragraph, or the image alt text).
+  function buildFigures() {
+    const prose = document.querySelector('.post-body');
+    if (!prose) return;
+    Array.from(prose.children).forEach((node) => {
+      if (!isImageParagraph(node)) return;
+      const img = node.children[0] as HTMLImageElement;
+      const fig = document.createElement('figure');
+      fig.className = 'figure-single';
+      fig.appendChild(img);
+
+      const next = node.nextElementSibling;
+      if (isCaptionParagraph(next)) {
+        const cap = document.createElement('figcaption');
+        while (next.firstChild) cap.appendChild(next.firstChild);
+        fig.appendChild(cap);
+        next.remove();
+      } else if (img.getAttribute('alt')) {
+        const cap = document.createElement('figcaption');
+        cap.textContent = img.getAttribute('alt');
+        fig.appendChild(cap);
+      }
+      node.replaceWith(fig);
+    });
+  }
+
   buildGalleries();
+  buildFigures();
 </script>
 
 <style>

@@ -8,7 +8,9 @@ highlight: "Successfully reentered W-Series 4 and W-Series 5"
 highlightHref: "https://www.linkedin.com/feed/update/urn:li:activity:7424502556598562816/"
 ---
 
-At [Varda Space Industries](https://www.varda.com), we manufacture materials in microgravity and bring them *home*. We fly autonomous capsules to orbit, process pharmaceuticals in the unique environment of space, and then thread the needle of a hypersonic atmospheric reentry to land the product back on Earth. As a **Spacecraft Guidance, Navigation, and Control (GNC) Engineer II**, I work the part of the mission where the physics is least forgiving: getting a capsule from orbit to a precise landing through Mach 25 reentry heating.
+At [Varda Space Industries](https://www.varda.com), we manufacture materials in microgravity and bring them *home*. We fly autonomous capsules to orbit, process pharmaceuticals in the unique environment of space, and then thread the needle of a hypersonic atmospheric reentry to land the product back on Earth. As a **Spacecraft Guidance, Navigation, and Control (GNC) Engineer II**, I work the part of the mission where the physics is least forgiving: getting a capsule from orbit to a precise landing through a Mach 25 reentry.
+
+The cargo itself is small but high value: each capsule carries a pharmaceutical processing payload that grows drug crystals in orbit, where the absence of convection and sedimentation can yield purer, more uniform crystal forms (polymorphs) than are achievable on the ground. Our first mission, W-1, crystallized **ritonavir**, an antiviral used in HIV therapy, to study how its solid form behaves in microgravity. Later W-Series flights have carried additional small-molecule drug formulations, each one processed on orbit and returned to Earth for analysis. That return is exactly the leg of the mission I own.
 
 <video autoplay muted loop playsinline preload="auto" poster="/media/covers/varda-poster.jpg"><source src="/media/varda/reentry.mp4" type="video/mp4" /></video>
 
@@ -24,7 +26,7 @@ A Varda capsule spends weeks on orbit as a free-flying spacecraft, then has minu
 
 #### **W-Series 4 & 5**
 
-I led Monte Carlo simulations, trajectory design optimization, post-flight analysis, and on-orbit GNC operations for **W-Series 4**, and for the **successful launch and reentry of W-Series 5**. Each flight in the W-Series tightens the loop between what we manufacture on orbit and how reliably we can return it, and every reentry is a fresh, fully instrumented dataset to sharpen the next mission's predictions.
+I led Monte Carlo simulations, trajectory design optimization, post-flight analysis, and on-orbit GNC operations for **W-Series 4**, and for the **successful launch and reentry of W-Series 5**. Each flight in the W-Series tightens the loop between what we manufacture on-orbit and how reliably we can return it, and every reentry is a fresh, fully instrumented dataset to sharpen the next mission's predictions.
 
 The team and I were on the ground for the W-5 recovery, and there is nothing quite like watching a vehicle you simulated thousands of times come back exactly where the dispersions said it would.
 

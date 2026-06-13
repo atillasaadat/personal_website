@@ -22,13 +22,9 @@ During the initial on-orbit phase of Droid.001, we encountered early challenges 
 
 The **automated astrodynamics and attitude control tools** I developed during this phase allowed us to verify and track the performance of all GNC hardware. We performed tests on various systems, including the IMU, Gyro, and Reaction Wheels, ensuring Droid.001's ADCS system functioned flawlessly. Additionally, our team was able to use the onboard cameras to capture **stunning images of the moon**, demonstrating Droid.001's precise imaging capabilities. Though not depicted here, **Droid.001 later captured consecutive images of RSOs across multiple frames and repeated target accesses, demonstrating the on-orbit success of the GNC system design, testing, and the developed NEI optimizer.**
 
-![](/media/gnc-engineer-turion-space/img01.jpg)
+![In-situ images of the Moon captured by Droid.001's onboard camera, demonstrating the spacecraft's precise pointing and imaging capabilities](/media/gnc-engineer-turion-space/img01.jpg)
 
-![](/media/gnc-engineer-turion-space/img01.jpg)
-
-![](/media/gnc-engineer-turion-space/img03.jpg)
-
-![](/media/gnc-engineer-turion-space/img03.jpg)
+![In-situ images of the Moon captured by Droid.001's onboard camera, demonstrating the spacecraft's precise pointing and imaging capabilities](/media/gnc-engineer-turion-space/img03.jpg)
 
 <div class="li-embeds">
   <figure class="li-embed">
@@ -51,21 +47,28 @@ The **automated astrodynamics and attitude control tools** I developed during t
 
 **Simulation of an automated RSO imaging mission, optimized for attitude constraints and ideal image capture time**
 
-**In-situ RSO image of** [**SIMSAT2 (NORAD ID: 26366)**](https://www.satcat.com/sats/26366) **taken from Droid.001 using the NEI Optimization software**
-
 ![In-situ RSO image of Starfish Space's OTTER PUP (NORAD ID: 56933) taken from Droid.001 using the NEI Optimization software (Linkedin Post), with multiple concurrent flybys](/media/gnc-engineer-turion-space/img06.jpg)
 
 **In-situ RSO image of** [**Starfish Space's OTTER PUP (NORAD ID: 56933)**](https://www.satcat.com/sats/56933) **taken from Droid.001 using the NEI Optimization software (**[**Linkedin Post**](https://www.linkedin.com/posts/tylerjpierce_i-only-know-how-to-use-microsoft-paint-but-activity-7289152630491168768-_U1s/)**), with multiple concurrent flybys**
 
-**Turion Space LinkedIn post on Payload Pioneers 2024 selection**
 
+**In-situ RSO image of** [**SIMSAT2 (NORAD ID: 26366)**](https://www.satcat.com/sats/26366) **taken from Droid.001 using the NEI Optimization software**
 <div class="li-embeds">
   <figure class="li-embed">
     <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:share:7245827506698682369" title="Turion Space post on LinkedIn" height="620" frameborder="0" allowfullscreen loading="lazy"></iframe>
   </figure>
+</div>
+
+<div class="li-embeds">
   <figure class="li-embed">
     <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7440068446752743424" title="Turion Space post on LinkedIn" height="620" frameborder="0" allowfullscreen loading="lazy"></iframe>
   </figure>
+</div>
+
+
+**Turion Space LinkedIn post on Payload Pioneers 2024 selection**
+
+<div class="li-embeds">
   <figure class="li-embed">
     <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:share:7252350370247540738" title="Turion Space post on LinkedIn" height="620" frameborder="0" allowfullscreen loading="lazy"></iframe>
   </figure>

@@ -36,12 +36,18 @@ Each training sample is a 60‑day slice of hourly drivers:
 
 A two‑stage scaler (quantile → standard) maps every feature to Ɲ(0, 1), taming proton‑flux outliers and ensuring numeric stability.
 
-|  |  |  |
-| --- | --- | --- |
-| **Stage** | **Layer** | **Output** |
-| Encoder | **3 × BiGRU (h = 384/dir)** | 1440 × 768 hidden states |
-| Attention | **Additive attention** | 768‑D context vector, z |
-| Head | **LayerNorm → GELU → Linear** | 432‑step log‑density residual |
+<figure class="table-center">
+<table>
+<thead>
+<tr><th>Stage</th><th>Layer</th><th>Output</th></tr>
+</thead>
+<tbody>
+<tr><td>Encoder</td><td>3 × BiGRU (h = 384/dir)</td><td>1440 × 768 hidden states</td></tr>
+<tr><td>Attention</td><td>Additive attention</td><td>768-D context vector, z</td></tr>
+<tr><td>Head</td><td>LayerNorm → GELU → Linear</td><td>432-step log-density residual</td></tr>
+</tbody>
+</table>
+</figure>
 
 The additive attention **automatically spotlighted the handful of storm‑time hours that dominate drag errors**, giving the model storm “situational awareness” without deep stacks .
 
@@ -54,16 +60,13 @@ This end‑to‑end pipeline **hits real‑time throughput, outperforms the tran
 
 [**MIT STORM-AI**](https://aeroastro.mit.edu/arclab/aichallenge/) **Ranking:** **4th / 18** **validated participants**
 
-|  |  |  |  |  |  |  |
-| --- | --- | --- | --- | --- | --- | --- |
 | **Phase 1.1 Public (Medium)** | **Phase 1.1 Public (Hard)** | **Public Score** | **Private Score** | **Model Score** | **Normalized Model Score** | **Report Score (Q)** |
+| --- | --- | --- | --- | --- | --- | --- |
 | 0.6784 | 0.5398 | 0.5675 | 0.1156 | 0.4998 | **0.7094** | **0.807** |
 
 ![](/media/mit-storm-ai-challenge/img01.jpg)
 
 ![Certificate of Recognition received from MIT ARCLab](/media/mit-storm-ai-challenge/img02.jpg)
-
-Certificate of Recognition received from MIT ARCLab
 
 The model outperformed the official transformer baseline while keeping the parameter count and run‑time budget tiny.
 
@@ -90,5 +93,5 @@ I’m would explore three extensions:
 
 ### Dive Deeper
 
-- [**Paper (4 pages)**](https://www.researchgate.net/publication/393786213_Real-Time_Thermospheric_Density_Forecasting_with_a_Metric-Aligned_BiGRU-Attention_Network): full method, ablation studies, and references (also shown below)
+- [**Paper (4 pages)**](https://www.researchgate.net/publication/393786213_Real-Time_Thermospheric_Density_Forecasting_with_a_Metric-Aligned_BiGRU-Attention_Network): full method, ablation studies, and references
 - **Code**: [MIT‑licensed Github repo with data loaders, training scripts, and pretrained weights](https://github.com/atillasaadat/stormai-mit-competition)

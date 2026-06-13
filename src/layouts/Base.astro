@@ -50,6 +50,24 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     </main>
     <Footer />
     <script is:inline>
+      // Open every external link (any host that isn't mine) in a new tab.
+      try {
+        document.querySelectorAll('a[href]').forEach(function (a) {
+          try {
+            var u = new URL(a.href, location.href);
+            var internal = u.host === location.host || /(^|\.)atillasaadat\.me$/.test(u.host);
+            if (u.host && !internal) {
+              a.target = '_blank';
+              var rel = (a.rel ? a.rel.split(/\s+/) : []);
+              ['noopener', 'noreferrer'].forEach(function (t) {
+                if (rel.indexOf(t) === -1) rel.push(t);
+              });
+              a.rel = rel.join(' ');
+            }
+          } catch (e) {}
+        });
+      } catch (e) {}
+
       // Lightweight pageview beacon. The /track Function (Cloudflare Pages)
       // records the visit with server-side geo. No-op in environments without
       // the Function (e.g. `astro dev`).

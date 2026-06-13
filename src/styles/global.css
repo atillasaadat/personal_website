@@ -124,6 +124,19 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   border: 1px solid var(--line);
 }
 
+/* Standalone image with an attached, centered caption (built client-side). */
+.prose figure.figure-single { margin: 1.75rem 0; padding: 0; }
+.prose figure.figure-single img { margin: 0 auto 0.55rem; }
+.prose figure.figure-single figcaption {
+  text-align: center;
+  color: var(--text-1);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  max-width: 46rem;
+  margin: 0 auto;
+}
+.prose figure.figure-single figcaption a { color: var(--accent-2); }
+
 /* Responsive 16:9 video embed (YouTube, etc.), use <div class="embed">…</div> */
 .prose .embed {
   position: relative;
@@ -135,6 +148,25 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   background: var(--bg-1);
 }
 .prose .embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Embedded Google Slides deck (roughly 5:4), use <div class="slides">…</div> */
+.prose .slides {
+  position: relative;
+  aspect-ratio: 700 / 560;
+  margin: 1.75rem auto;
+  max-width: 700px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-1);
+}
+.prose .slides iframe {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -313,6 +345,9 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   color: var(--text-1);
 }
 .prose th { color: var(--text-0); background: var(--bg-1); font-family: var(--font-display); }
+/* Center a table on the page and let it shrink to its content. */
+.prose .table-center { margin: 1.5rem 0; padding: 0; text-align: center; overflow-x: auto; }
+.prose .table-center table { display: inline-table; width: auto; margin: 0 auto; text-align: left; }
 .prose hr { border: 0; border-top: 1px solid var(--line); margin-block: 2.5rem; }
 
 /* ============================================================
