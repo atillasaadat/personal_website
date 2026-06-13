@@ -53,8 +53,8 @@ site_files/           # ARCHIVE: raw Wix media export, reference only, not deplo
 
 | Route | Content |
 |---|---|
-| `/` | Hero/about (GNC Engineer II @ Varda), specialties, projects grid, live 3D satellite map (Cesium globe), awards, contact/social |
-| `/projects` | Index of all posts, newest first |
+| `/` | Hero/about (GNC Engineer II @ Varda), specialties, projects grid (`#projects`, the full post list), live 3D satellite map (Cesium globe), awards (`#awards`), contact/social. The nav "Projects" and "Awards" links scroll to these sections rather than separate pages. |
+| `/projects` | Redirects to `/#projects` (the homepage section). Kept only so old/bookmarked links don't 404. |
 | `/post/<slug>` | Individual project/blog post, **slugs must match the old Wix URLs** to preserve inbound links |
 | `/cv` | Embedded + downloadable CV PDF |
 
