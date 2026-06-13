@@ -142,6 +142,34 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   border: 0;
 }
 
+/* Embedded LinkedIn posts. Each iframe keeps its own (post-specific) height. */
+.prose .li-embeds {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 1.75rem 0;
+}
+.prose .li-embed {
+  margin: 0;
+  width: 100%;
+  max-width: 550px;
+}
+.prose .li-embed iframe {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  display: block;
+  margin: 0;
+}
+.prose .li-embed figcaption {
+  margin-top: 0.5rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-1);
+}
+
 /* Image gallery (built client-side from runs of consecutive images).
    One main stage + a scrollable thumbnail strip, caption space reserved. */
 .prose .gallery { margin: 2rem 0; }
@@ -168,7 +196,7 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   min-height: 1.4em;
   text-align: center;
   font-size: 0.85rem;
-  color: var(--text-2);
+  color: var(--text-1);
   margin: 0.6rem 0 0.7rem;
 }
 .prose .gallery-thumbs {
@@ -237,7 +265,7 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
 .prose figure figcaption {
   margin-top: 0.5rem;
   font-size: 0.82rem;
-  color: var(--text-2);
+  color: var(--text-1);
   text-align: center;
 }
 /* On narrow screens, stop floating and just center the figure */

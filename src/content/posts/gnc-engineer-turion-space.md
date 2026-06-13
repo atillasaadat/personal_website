@@ -30,7 +30,22 @@ The **automated astrodynamics and attitude control tools** I developed during t
 
 ![](/media/gnc-engineer-turion-space/img03.jpg)
 
+<div class="li-embeds">
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:share:7199273852936331266" title="Turion Space post on LinkedIn" height="620" frameborder="0" allowfullscreen loading="lazy"></iframe>
+  </figure>
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7205286188507688961" title="Turion Space post on LinkedIn" height="620" frameborder="0" allowfullscreen loading="lazy"></iframe>
+  </figure>
+</div>
+
 #### **In-Situ NEI Images of the Moon taken from Droid.001**
+
+<div class="li-embeds">
+  <figure class="li-embed">
+    <iframe src="https://platform.twitter.com/embed/Tweet.html?id=1791035488222183550&theme=dark&dnt=true" title="Turion Space post on X" height="620" frameborder="0" allowfullscreen loading="lazy" scrolling="no"></iframe>
+  </figure>
+</div>
 
 ![](/media/gnc-engineer-turion-space/img05.jpg)
 
@@ -44,13 +59,25 @@ The **automated astrodynamics and attitude control tools** I developed during t
 
 **Turion Space LinkedIn post on Payload Pioneers 2024 selection**
 
+<div class="li-embeds">
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:share:7245827506698682369" title="Turion Space post on LinkedIn" height="620" frameborder="0" allowfullscreen loading="lazy"></iframe>
+  </figure>
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7440068446752743424" title="Turion Space post on LinkedIn" height="620" frameborder="0" allowfullscreen loading="lazy"></iframe>
+  </figure>
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:share:7252350370247540738" title="Turion Space post on LinkedIn" height="620" frameborder="0" allowfullscreen loading="lazy"></iframe>
+  </figure>
+</div>
+
 ### **The Next Evolution: Droid.002 and Beyond**
 
 Building on the success of Droid.001, we’ve embarked on the next chapter with **Droid.002**. This satellite aims to go further by improving the imaging performance and introducing new features for tracking and capturing images of Resident Space Objects (RSOs). Currently, Droid.002 is undergoing rigorous Assembly, Integration and Testing (AIT), with tasks ranging from SITL/HITL GNC hardware testing, radiation analysis, ΔV calculations for station-keeping, and deorbiting.
 
 A key innovation we’ve developed for both Droid.001 and Droid.002 is the **NEI Optimizer,** an on-orbit RSO pointing algorithm. This software optimizes image capture times, considering everything from the spacecraft’s position to the target’s motion, ensuring we can capture high-quality images even from fast-moving objects. You can see this in action in the videos and imagery below from both RSOs and lunar imaging missions.
 
-<video controls preload="metadata" playsinline><source src="/media/gnc-engineer-turion-space/vid00.mp4" type="video/mp4" /></video>
+<video autoplay muted loop playsinline preload="auto"><source src="/media/gnc-engineer-turion-space/vid00.mp4" type="video/mp4" /></video>
 
 **Highlighting GNC Engineering Achievements at Turion Space**
 
@@ -72,3 +99,11 @@ This research details Turion’s **Non-Earth Imaging (NEI) mission planner**, wh
 ![](/media/gnc-engineer-turion-space/img07.jpg)
 
 ## **Turion Space Videos:**
+
+<div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/jA6TNCRmeyM" title="Turion Space video" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+
+<div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/zQPRsL2FKRM" title="Turion Space video" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+
+<div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/9FCYnzXmGR8" title="Turion Space video" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+
+<div class="embed"><iframe src="https://www.youtube-nocookie.com/embed/sN7dJQUerlg" title="Turion Space video" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>

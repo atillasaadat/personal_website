@@ -10,7 +10,7 @@ highlightHref: "https://www.linkedin.com/feed/update/urn:li:activity:74245025565
 
 At [Varda Space Industries](https://www.varda.com), we manufacture materials in microgravity and bring them *home*. We fly autonomous capsules to orbit, process pharmaceuticals in the unique environment of space, and then thread the needle of a hypersonic atmospheric reentry to land the product back on Earth. As a **Spacecraft Guidance, Navigation, and Control (GNC) Engineer II**, I work the part of the mission where the physics is least forgiving: getting a capsule from orbit to a precise landing through Mach 25 reentry heating.
 
-<video controls preload="metadata" playsinline poster="/media/covers/varda-poster.jpg"><source src="/media/varda/reentry.mp4" type="video/mp4" /></video>
+<video autoplay muted loop playsinline preload="auto" poster="/media/covers/varda-poster.jpg"><source src="/media/varda/reentry.mp4" type="video/mp4" /></video>
 
 *A Varda W-Series capsule streaking back through the atmosphere. This is the reentry environment my GNC work is built around.*
 
@@ -26,11 +26,22 @@ A Varda capsule spends weeks on orbit as a free-flying spacecraft, then has minu
 
 I led Monte Carlo simulations, trajectory design optimization, post-flight analysis, and on-orbit GNC operations for **W-Series 4**, and for the **successful launch and reentry of W-Series 5**. Each flight in the W-Series tightens the loop between what we manufacture on orbit and how reliably we can return it, and every reentry is a fresh, fully instrumented dataset to sharpen the next mission's predictions.
 
-The team and I were on the ground for the W-5 recovery, and there is nothing quite like watching a vehicle you simulated thousands of times come back exactly where the dispersions said it would:
+The team and I were on the ground for the W-5 recovery, and there is nothing quite like watching a vehicle you simulated thousands of times come back exactly where the dispersions said it would.
 
-- 🛬 [Watch the W-5 return video on LinkedIn](https://www.linkedin.com/feed/update/urn:li:activity:7424502556598562816/)
-- 🔥 [W-5 reentry imagery](https://www.linkedin.com/feed/update/urn:li:activity:7422823584055762944/)
-- 🤝 [The recovery team with W-6 back on the ground](https://www.linkedin.com/feed/update/urn:li:activity:7470891591449096192/) (I'm in the group shot)
+<div class="li-embeds">
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:activity:7424502556598562816" title="W-5 return video on LinkedIn" height="660" frameborder="0" allowfullscreen loading="lazy"></iframe>
+    <figcaption>🛬 W-5 return video</figcaption>
+  </figure>
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:activity:7422823584055762944" title="W-5 reentry imagery on LinkedIn" height="740" frameborder="0" allowfullscreen loading="lazy"></iframe>
+    <figcaption>🔥 W-5 reentry imagery</figcaption>
+  </figure>
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:activity:7470891591449096192" title="The recovery team with W-6 on LinkedIn" height="600" frameborder="0" allowfullscreen loading="lazy"></iframe>
+    <figcaption>🤝 The recovery team with W-6 back on the ground (I'm in the group shot)</figcaption>
+  </figure>
+</div>
 
 #### **What Reentry Looks Like**
 
