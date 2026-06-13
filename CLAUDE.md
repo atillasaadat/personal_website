@@ -23,6 +23,7 @@ Personal portfolio and project blog for Atilla Saadat, Spacecraft GNC Engineer I
 npm run dev       # local dev server at localhost:4321
 npm run build     # production build to dist/
 npm run preview   # preview the production build
+npm test          # Playwright responsive tests across mobile/tablet/desktop viewports
 ```
 
 ## Repository Layout
@@ -73,3 +74,4 @@ Satellite map: a self-contained CesiumJS globe at `public/satmap.html` (the user
 - Don't add client-side JS frameworks (React/Vue) for static content, use Astro components; small vanilla `<script>` islands are fine for interactivity.
 - Preserve old Wix post slugs in any URL changes; add redirects if a slug must change.
 - Run `npm run build` before committing layout/component changes, it type-checks content frontmatter.
+- Run `npm test` after layout/CSS/component changes: Playwright checks the key pages at 4 viewports (360/390/820/1440px) for horizontal overflow, elements spilling past the viewport, and working navigation. CI (`.github/workflows/ci.yml`) runs the same on every push/PR. Add a page to the `PAGES` list in `tests/_helpers.ts` when a new layout pattern is introduced.

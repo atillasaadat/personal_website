@@ -16,3 +16,9 @@ scrape/
 # Cloudflare wrangler
 .wrangler/
 .dev.vars
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/

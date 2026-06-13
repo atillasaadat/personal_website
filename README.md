@@ -83,14 +83,31 @@ After any edit: `git add -A && git commit -m "..." && git push`. The live site r
 
 ## 5. Test
 
-This is a static content site, so testing is mainly making sure it builds and looks right:
+Two gates protect the site:
 
+**1. Build (content/type check)**
 ```bash
 npm run build      # fails if any post frontmatter is invalid
-npm run preview    # click through the pages locally
 ```
 
-There is no unit-test suite. The build step is the gate.
+**2. Responsive / cross-device tests (Playwright)**
+
+These build the site, serve the real production output, and load the key pages at four viewport sizes (small phone 360px, phone 390px, tablet 820px, desktop 1440px), checking that:
+- the page never scrolls sideways (no horizontal overflow),
+- no image, video, table, or embed spills past the viewport,
+- the header works per device (hamburger menu on mobile, inline links on desktop) and the Projects link scrolls to its section,
+- the hero and key sections render.
+
+```bash
+npx playwright install --with-deps chromium   # one-time: download the browser
+npm test                                        # run all viewport tests
+npm run test:ui                                 # interactive runner (great for debugging)
+npm run test:report                             # open the last HTML report
+```
+
+The HTML report includes a **full-page screenshot of every page on every device**, so you can eyeball each layout after a change. Test files live in `tests/`; viewports are defined in `playwright.config.ts`.
+
+These run automatically in CI on every push and pull request (see section 8), so a change that breaks a mobile, tablet, or desktop layout fails before it deploys.
 
 ## 6. Host it in production (recommended: Cloudflare Pages, free)
 
@@ -158,6 +175,12 @@ npx wrangler pages dev dist                                # static site + Funct
 # then visit the printed localhost URL; /insights uses admin / test
 ```
 
+## 8. Continuous integration (CI)
+
+`.github/workflows/ci.yml` runs the responsive test suite (section 5) on **every push to `main` and every pull request**. It installs dependencies, builds the site, and runs the Playwright tests across all four device viewports. If any layout breaks, the check fails (red X on the commit/PR), and the run uploads a **`playwright-report` artifact** containing the per-device screenshots and any failure traces, so you can see exactly what broke and on which device.
+
+This is independent of deployment: Cloudflare Pages still deploys from `main` on its own. CI is just a safety net that flags broken layouts before (or right as) they ship. If you want deploys to wait for tests to pass, you can later add the CI check as a required status check in your GitHub branch protection settings.
+
 ---
 
 ## Project layout
@@ -165,15 +188,19 @@ npx wrangler pages dev dist                                # static site + Funct
 ```
 src/
   content/posts/    Blog posts (Markdown). One file per project.
-  pages/            Routes: index, projects, cv, post/[id], 404, redirects
+  pages/            Routes: index, projects (redirect), cv, post/[id], 404, og/ (social cards)
   components/       Header, Footer, Starfield, ProjectCard, SatMap, Socials
   layouts/          Base (shared shell) and Post
+  lib/og.ts         Open Graph social-card image template (satori)
   styles/global.css Design tokens plus all shared styling
 public/
   media/            Images, videos, post covers, award logos, profile photo
   files/            CV PDF and other downloadable documents
   satmap.html       Self-contained CesiumJS satellite globe (loaded in an iframe)
-functions/          Cloudflare Pages Functions: track.js (beacon), insights.js (dashboard)
+tests/              Playwright responsive/cross-device tests
+playwright.config.ts  Test viewports (mobile/tablet/desktop) + dev server config
+.github/workflows/  CI: runs the responsive tests on every push and pull request
+functions/          Cloudflare Pages Functions: track.js (beacon), insights.js (dashboard), oembed.js
 wrangler.toml       Cloudflare config (D1 binding)
 schema.sql          Analytics database schema
 scrape/, site_files/  Local archives from the old Wix site (gitignored, reference only)
