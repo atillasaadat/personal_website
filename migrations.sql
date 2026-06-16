@@ -7,6 +7,14 @@
 ALTER TABLE pageviews ADD COLUMN lat REAL;
 ALTER TABLE pageviews ADD COLUMN lng REAL;
 
+-- Migration: add network org/ASN and external referrer. Run each line; an
+-- ALTER for a column that already exists errors harmlessly, so just run the
+-- remaining lines on their own (or apply this whole file column-by-column).
+ALTER TABLE pageviews ADD COLUMN asn INTEGER;
+ALTER TABLE pageviews ADD COLUMN org TEXT;
+ALTER TABLE pageviews ADD COLUMN ref TEXT;
+CREATE INDEX IF NOT EXISTS idx_pageviews_org ON pageviews(org);
+
 -- The site wasn't public before bot-filtering was added, so the pre-launch rows
 -- are all crawlers/scanners. To start clean, also run:
 --   npx wrangler d1 execute site-analytics --remote --command "DELETE FROM pageviews;"

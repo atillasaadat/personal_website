@@ -100,11 +100,16 @@ const ogImage = new URL(`/og/${ogRoute}.png`, Astro.site);
         });
 
         // Lightweight pageview beacon (Cloudflare Pages /track Function records
-        // the visit with server-side geo). No-op in local dev.
+        // the visit with server-side geo + network org). No-op in local dev.
+        // document.referrer is passed explicitly: the beacon is an <img> load
+        // from our own page, so the request's Referer header is always us; the
+        // external source that brought the visitor here only lives client-side.
         try {
           if (!/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) {
             new Image().src =
-              '/track?p=' + encodeURIComponent(location.pathname) + '&t=' + Date.now();
+              '/track?p=' + encodeURIComponent(location.pathname) +
+              '&r=' + encodeURIComponent(document.referrer || '') +
+              '&t=' + Date.now();
           }
         } catch (e) {}
       }

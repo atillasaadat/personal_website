@@ -14,6 +14,16 @@ const PIXEL = Uint8Array.from([
 // Known bot / automation / preview / monitoring user-agent signatures.
 const BOT_UA = /bot|crawl|spider|slurp|bingpreview|mediapartners|facebookexternalhit|embedly|quora|pinterest|slackbot|telegrambot|whatsapp|discordbot|twitterbot|linkedinbot|redditbot|applebot|petalbot|yandex|baidu|sogou|semrush|ahrefs|mj12|dotbot|dataforseo|bytespider|gptbot|claudebot|ccbot|perplexity|amazonbot|headless|phantomjs|puppeteer|playwright|selenium|lighthouse|chrome-lighthouse|pagespeed|gtmetrix|pingdom|uptime|statuscake|monitor|newrelic|datadog|curl|wget|python-requests|python-urllib|java\/|go-http|node-fetch|axios|got\s|httpx|okhttp|scrapy|libwww|cf-/i;
 
+// Pure datacenter / hosting / VPS networks. Real visitors browse from
+// residential, mobile, corporate, or campus ISPs, never from these networks,
+// so traffic whose Cloudflare-reported network org matches is almost certainly
+// an automated scraper (the kind that spoofs a browser UA and Sec-Fetch). The
+// big clouds (AWS / GCP / Azure / Oracle) are deliberately NOT listed: a real
+// employer at a tech company can egress through them, and a few crawler hits
+// from those are preferable to dropping a genuine visit. Those still get
+// recorded, with their org shown on the dashboard so they can be judged.
+const HOSTING_ORG = /digitalocean|ovh|hetzner|linode|akamai|fastly|vultr|contabo|scaleway|leaseweb|\bm247\b|choopa|psychz|hostwinds|datacamp|colocrossing|quadranet|hostinger|namecheap|godaddy|bluehost|dreamhost|ionos|1&1|gigenet|sharktech|incero|servermania|hostkey|servers\.com|serverius|worldstream|poneytelecom|online s\.?a\.?s|netcup|time4vps|hostpapa|webhosting|hosting solutions|data ?cent(er|re)|dedicated server|virtual server|\bvps\b|colocation|cloud server/i;
+
 // Decide whether a request to the beacon looks like a real human browser.
 // Conservative: when in doubt about a *modern* signal, treat as bot.
 function isBot(request) {
@@ -29,10 +39,30 @@ function isBot(request) {
   const site = request.headers.get('Sec-Fetch-Site');
   if (site && site !== 'same-origin' && site !== 'same-site') return true;
 
+  // Real browsers negotiate a language; near every spoofing scraper omits it.
+  if (!request.headers.get('Accept-Language')) return true;
+
+  const cf = request.cf || {};
   // Cloudflare's verified-bot signal (set even on free plans for known crawlers).
-  if (request.cf && request.cf.verifiedBot) return true;
+  if (cf.verifiedBot) return true;
+  // Traffic originating from pure hosting/VPS networks (see HOSTING_ORG note).
+  if (cf.asOrganization && HOSTING_ORG.test(cf.asOrganization)) return true;
 
   return false;
+}
+
+// Reduce an external referrer URL to a bare hostname (no www). Returns null for
+// empty referrers and for our own domains (those are internal navigations, i.e.
+// "direct" as far as traffic sources go).
+function refHost(raw) {
+  if (!raw) return null;
+  try {
+    const h = new URL(raw).hostname.replace(/^www\./, '').toLowerCase();
+    if (!h || /(^|\.)atillasaadat\.(com|me)$/.test(h)) return null;
+    return h.slice(0, 128);
+  } catch (e) {
+    return null;
+  }
 }
 
 export async function onRequestGet({ request, env }) {
@@ -64,11 +94,13 @@ export async function onRequestGet({ request, env }) {
 
   const lat = parseFloat(cf.latitude);
   const lng = parseFloat(cf.longitude);
+  const asn = Number.isFinite(cf.asn) ? cf.asn : parseInt(cf.asn, 10);
+  const ref = refHost(url.searchParams.get('r'));
 
   try {
     if (env.DB) {
       await env.DB.prepare(
-        'INSERT INTO pageviews (ts, path, city, region, country, lat, lng, vid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO pageviews (ts, path, city, region, country, lat, lng, asn, org, ref, vid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       )
         .bind(
           Date.now(),
@@ -78,6 +110,9 @@ export async function onRequestGet({ request, env }) {
           cf.country || null,
           Number.isFinite(lat) ? lat : null,
           Number.isFinite(lng) ? lng : null,
+          Number.isFinite(asn) ? asn : null,
+          cf.asOrganization || null,
+          ref,
           vid,
         )
         .run();

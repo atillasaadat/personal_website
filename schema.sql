@@ -15,8 +15,13 @@ CREATE TABLE IF NOT EXISTS pageviews (
   country TEXT,               -- ISO-2 country code
   lat     REAL,               -- approximate latitude  (Cloudflare geo)
   lng     REAL,               -- approximate longitude (Cloudflare geo)
+  asn     INTEGER,            -- network autonomous-system number (Cloudflare)
+  org     TEXT,               -- network organization / ISP (cf.asOrganization);
+                              -- often the company or institution for corp/campus visits
+  ref     TEXT,               -- external referrer hostname that sent the visitor
   vid     TEXT    NOT NULL    -- anonymous per-visitor id (cookie)
 );
 
 CREATE INDEX IF NOT EXISTS idx_pageviews_ts  ON pageviews(ts);
 CREATE INDEX IF NOT EXISTS idx_pageviews_vid ON pageviews(vid);
+CREATE INDEX IF NOT EXISTS idx_pageviews_org ON pageviews(org);
