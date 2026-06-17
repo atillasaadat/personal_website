@@ -81,7 +81,7 @@ function esc(v) {
   );
 }
 
-function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities, orgs, refs }) {
+function page({ range, fromStr, toStr, label, totals, geo, topPages, countryPoints, regions, cities, orgs, refs }) {
   const today = ymd(Date.now());
 
   const tabs = RANGES.map(
@@ -146,23 +146,16 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
         .join('')
     : '<tr><td colspan="3" class="empty">No referrer data yet.</td></tr>';
 
-  // Choropleth values keyed by ISO-2 country code.
-  const mapCountries = {};
-  let maxVisitors = 0;
-  for (const c of countries) {
-    if (!c.country) continue;
-    mapCountries[c.country] = { v: c.visitors, w: c.views };
-    if (c.visitors > maxVisitors) maxVisitors = c.visitors;
-  }
-
-  // Marker layers for finer levels; each needs coordinates from Cloudflare geo.
+  // Each map level is a marker layer placed at the average Cloudflare-reported
+  // coordinate for that place, so the Leaflet tile map (which already draws
+  // country + US state borders) stays crisp at every zoom level.
   const toMarkers = (rows, nameOf) =>
     rows
       .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng))
       .map((r) => ({ name: nameOf(r), coords: [r.lat, r.lng], v: r.visitors, w: r.views }));
 
   const mapData = {
-    countries: mapCountries,
+    countries: toMarkers(countryPoints, (r) => r.country || '?'),
     regions: toMarkers(regions, (r) => [r.region, r.country].filter(Boolean).join(', ')),
     cities: toMarkers(cities, (r) => [r.city, r.region, r.country].filter(Boolean).join(', ')),
   };
@@ -174,7 +167,8 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
 <meta name="robots" content="noindex, nofollow" />
 <title>Insights &middot; atillasaadat.com</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/css/jsvectormap.min.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <style>
   :root { color-scheme: dark; }
   body { margin:0; background:#05080f; color:#e8eef9; font:15px/1.5 ui-sans-serif,system-ui,sans-serif; }
@@ -187,6 +181,15 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
          color:#aab8d4; text-decoration:none; font-size:0.82rem; }
   .tab:hover { border-color:#5eead4; color:#5eead4; }
   .tab.active { background:rgba(94,234,212,0.14); border-color:#5eead4; color:#5eead4; }
+  .refresh { display:inline-flex; align-items:center; gap:0.4rem; background:rgba(94,234,212,0.1);
+             color:#5eead4; border:1px solid rgba(94,234,212,0.4); border-radius:999px;
+             padding:0.4rem 0.9rem; font:inherit; font-size:0.82rem; cursor:pointer; }
+  .refresh:hover { background:rgba(94,234,212,0.22); border-color:#5eead4; }
+  .refresh[disabled] { opacity:0.55; cursor:default; }
+  .refresh .ic { display:inline-block; transition:transform .6s; }
+  .refresh.busy .ic { animation:spin 0.8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .refresh-status { font-size:0.78rem; color:#7f8db0; }
   .daterange { display:flex; flex-wrap:wrap; align-items:center; gap:0.5rem;
                margin-left:auto; font-size:0.8rem; color:#aab8d4; }
   .daterange input[type=date] { background:#0c1322; color:#e8eef9; border:1px solid rgba(126,168,255,0.25);
@@ -206,11 +209,11 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
          background:transparent; color:#aab8d4; font:inherit; font-size:0.78rem; cursor:pointer; }
   .lvl:hover { border-color:#5eead4; color:#5eead4; }
   .lvl.active { background:rgba(94,234,212,0.14); border-color:#5eead4; color:#5eead4; }
-  #map { width:100%; height:520px; background:rgba(16,26,46,0.4);
+  #map { width:100%; height:520px; background:#0a101e;
          border:1px solid rgba(126,168,255,0.16); border-radius:10px; }
-  .legend { display:flex; align-items:center; gap:0.6rem; margin-top:0.6rem; font-size:0.74rem; color:#aab8d4; }
+  .legend { display:flex; flex-wrap:wrap; align-items:center; gap:0.6rem; margin-top:0.6rem; font-size:0.74rem; color:#aab8d4; }
   .legend .bar { width:160px; height:10px; border-radius:5px;
-                 background:linear-gradient(90deg,#1b3a5b,#5eead4); }
+                 background:linear-gradient(90deg,#2dd4bf,#facc15,#f43f5e); }
   .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; align-items:start; }
   table { width:100%; border-collapse:collapse; font-size:0.88rem; }
   th, td { text-align:left; padding:0.5rem 0.7rem; border-bottom:1px solid rgba(126,168,255,0.12); }
@@ -240,9 +243,15 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
   .danger button { background:rgba(248,113,113,0.14); color:#fca5a5; border:1px solid #f87171;
             border-radius:8px; padding:0.5rem 1.1rem; font:inherit; cursor:pointer; }
   .danger button:hover { background:rgba(248,113,113,0.28); color:#fff; }
-  .jvm-tooltip { background:#0c1322 !important; border:1px solid #5eead4 !important;
-                 color:#e8eef9 !important; border-radius:6px !important; }
-  .jvm-zoom-btn { background:#16243f !important; color:#e8eef9 !important; border-radius:5px; }
+  .leaflet-container { background:#0a101e; border:1px solid rgba(126,168,255,0.16); border-radius:10px; font:inherit; }
+  .leaflet-tooltip { background:#0c1322 !important; border:1px solid #5eead4 !important;
+                     color:#e8eef9 !important; border-radius:6px !important; font-size:0.78rem; box-shadow:none; }
+  .leaflet-tooltip-top::before { border-top-color:#5eead4 !important; }
+  .leaflet-tooltip-bottom::before { border-bottom-color:#5eead4 !important; }
+  .leaflet-bar a { background:#16243f !important; color:#e8eef9 !important; border-color:#0a101e !important; }
+  .leaflet-bar a:hover { background:#1d2f50 !important; }
+  .leaflet-control-attribution { background:rgba(5,8,15,0.7) !important; color:#7f8db0 !important; }
+  .leaflet-control-attribution a { color:#7ea8ff !important; }
   @media (max-width:680px){ .cards{ grid-template-columns:repeat(2,1fr); } .grid2{ grid-template-columns:1fr; } }
   @media (max-width:560px){ .daterange{ margin-left:0; } }
 </style>
@@ -251,6 +260,8 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
   <p class="sub">atillasaadat.com &middot; ${esc(label)} &middot; times in UTC</p>
   <div class="controls">
     <div class="tabs">${tabs}</div>
+    <button type="button" class="refresh" id="refresh-btn" title="Reload the data without refreshing the whole page"><span class="ic">&#x21bb;</span> Refresh</button>
+    <span class="refresh-status" id="refresh-status"></span>
     <form class="daterange" method="get">
       <label>From <input type="date" name="from" value="${esc(fromStr)}" max="${today}" /></label>
       <label>To <input type="date" name="to" value="${esc(toStr)}" max="${today}" /></label>
@@ -274,8 +285,8 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
   </div>
   <div id="map"></div>
   <div class="legend">
-    <span id="legend-choro" hidden><span>Fewer</span> <span class="bar"></span> <span>More visitors</span></span>
-    <span id="legend-marker">Countries are shaded by visitors; each dot is one location, sized by visitors.</span>
+    <span>Fewer</span> <span class="bar"></span> <span>More visitors</span>
+    <span class="muted">each dot is one location, color &amp; size scale with visitors</span>
     <span style="margin-left:auto" id="legend-peak"></span>
   </div>
 
@@ -327,75 +338,84 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
     </form>
   </div>
 </div>
-<script>window.__MAP__ = ${JSON.stringify(mapData)};</script>
-<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/js/jsvectormap.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/maps/world.js"></script>
+<script type="application/json" id="map-data">${JSON.stringify(mapData).replace(/</g, '\\u003c')}</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
   (function () {
-    var DATA = window.__MAP__ || { countries: {}, regions: [], cities: [] };
-    var el = document.getElementById('map');
-    var map = null;
+    var map = null;     // persistent Leaflet instance (survives data refreshes)
+    var layer = null;   // current marker layer, swapped on level change / refresh
     var level = 'cities';
 
-    // Country choropleth values, reused under every marker level so the shaded
-    // countries stay visible while dots add finer detail on top.
-    var countryValues = {};
-    var maxCountry = 0;
-    for (var k in DATA.countries) {
-      countryValues[k] = DATA.countries[k].v;
-      if (DATA.countries[k].v > maxCountry) maxCountry = DATA.countries[k].v;
+    // Map data is shipped in a JSON <script>; read it from the live page on
+    // load and from the fetched document on refresh (no eval needed).
+    function readMapData(root) {
+      var el = (root || document).getElementById('map-data');
+      try { return el ? JSON.parse(el.textContent) : {}; } catch (e) { return {}; }
     }
+    window.__MAP__ = readMapData(document);
 
-    // Scale marker radius (4..16px) by visitor count within the current layer.
-    function markerLayer(rows) {
-      var max = 1;
-      for (var i = 0; i < rows.length; i++) if (rows[i].v > max) max = rows[i].v;
-      return rows.map(function (r) {
-        var radius = 4 + Math.round(12 * Math.sqrt(r.v / max));
-        return { name: r.name, coords: r.coords, v: r.v, w: r.w, style: { r: radius } };
-      });
-    }
-
-    function build(lvl) {
-      if (map) { try { map.destroy(); } catch (e) {} map = null; }
-      el.innerHTML = '';
-
-      var opts = {
-        selector: '#map',
-        map: 'world',
-        zoomButtons: true,
-        zoomOnScroll: true,
-        backgroundColor: 'transparent',
-        regionStyle: {
-          initial: { fill: '#16243f', stroke: '#0a101e', strokeWidth: 0.4 },
-          hover: { fill: '#7ea8ff' },
-        },
-        series: { regions: [{
-          attribute: 'fill',
-          scale: ['#1b3a5b', '#5eead4'],
-          normalizeFunction: 'polynomial',
-          values: countryValues,
-        }] },
-        onRegionTooltipShow: function (event, tooltip, code) {
-          var d = DATA.countries[code];
-          if (d) tooltip.text(tooltip.text() + ': ' + d.v + ' visitors, ' + d.w + ' views', true);
-        },
-      };
-
-      if (lvl !== 'countries') {
-        var markers = markerLayer(DATA[lvl] || []);
-        opts.markers = markers;
-        opts.markerStyle = {
-          initial: { fill: '#5eead4', stroke: '#05221f', strokeWidth: 1.2, fillOpacity: 0.82 },
-          hover: { fill: '#a7f3e4', stroke: '#05221f' },
-        };
-        opts.onMarkerTooltipShow = function (event, tooltip, index) {
-          var m = markers[index];
-          if (m) tooltip.text(m.name + ': ' + m.v + ' visitors, ' + m.w + ' views', true);
-        };
+    // Readable teal -> amber -> rose gradient (low to high visitors). Each dot
+    // also scales in size, so the value reads even where colors are close.
+    var STOPS = [[0, [45, 212, 191]], [0.5, [250, 204, 21]], [1, [244, 63, 94]]];
+    function colorFor(t) {
+      t = Math.max(0, Math.min(1, t));
+      for (var i = 1; i < STOPS.length; i++) {
+        if (t <= STOPS[i][0]) {
+          var a = STOPS[i - 1], b = STOPS[i], f = (t - a[0]) / (b[0] - a[0]);
+          return 'rgb(' + [0, 1, 2].map(function (j) {
+            return Math.round(a[1][j] + (b[1][j] - a[1][j]) * f);
+          }).join(',') + ')';
+        }
       }
+      return 'rgb(244,63,94)';
+    }
 
-      map = new jsVectorMap(opts);
+    function rows() { return (window.__MAP__ || {})[level] || []; }
+
+    // Render (or re-render) the marker layer for the current level. When
+    // fit is true, frame the points; otherwise keep the user's current view.
+    function renderMap(fit) {
+      if (!window.L) return;
+      if (!map) {
+        map = L.map('map', { worldCopyJump: true, minZoom: 1, maxZoom: 12, attributionControl: true })
+          .setView([25, 0], 2);
+        L.tileLayer('https://{s}.basemap.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          subdomains: 'abcd', maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        }).addTo(map);
+      }
+      if (layer) { map.removeLayer(layer); layer = null; }
+
+      var data = rows();
+      var max = 1;
+      for (var i = 0; i < data.length; i++) if (data[i].v > max) max = data[i].v;
+
+      var group = L.layerGroup();
+      var pts = [];
+      for (var j = 0; j < data.length; j++) {
+        var r = data[j];
+        if (!r.coords || !isFinite(r.coords[0]) || !isFinite(r.coords[1])) continue;
+        var t = Math.sqrt(r.v / max);
+        var m = L.circleMarker(r.coords, {
+          radius: 5 + Math.round(17 * t),
+          color: '#05221f', weight: 1, fillColor: colorFor(t), fillOpacity: 0.82,
+        });
+        m.bindTooltip(r.name + ': ' + r.v + ' visitors, ' + r.w + ' views', { direction: 'top' });
+        group.addLayer(m);
+        pts.push(r.coords);
+      }
+      group.addTo(map);
+      layer = group;
+
+      var peak = document.getElementById('legend-peak');
+      if (peak) {
+        var noun = level === 'countries' ? 'countr' + (pts.length === 1 ? 'y' : 'ies')
+          : (pts.length === 1 ? level.slice(0, -1) : level);
+        peak.textContent = pts.length + ' located ' + noun + ' \\u00b7 peak ' + max + ' visitors';
+      }
+      if (fit && pts.length) { try { map.fitBounds(pts, { padding: [40, 40], maxZoom: 6 }); } catch (e) {} }
+      map.invalidateSize();
     }
 
     function setLevel(lvl) {
@@ -403,20 +423,54 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
       var btns = document.querySelectorAll('.lvl');
       for (var i = 0; i < btns.length; i++)
         btns[i].classList.toggle('active', btns[i].getAttribute('data-level') === lvl);
-      document.getElementById('legend-choro').hidden = lvl !== 'countries';
-      document.getElementById('legend-marker').hidden = lvl === 'countries';
-      var peak = document.getElementById('legend-peak');
-      if (lvl === 'countries') peak.textContent = 'Peak: ' + maxCountry + ' visitors in one country';
-      else { var n = (DATA[lvl] || []).length; peak.textContent = n + ' located ' + (n === 1 ? lvl.slice(0, -1) : lvl); }
-      try { build(lvl); } catch (e) {
-        el.innerHTML = '<p style="padding:1rem;color:#aab8d4">Map could not load.</p>';
-      }
+      renderMap(true);
     }
 
-    var btns = document.querySelectorAll('.lvl');
-    for (var i = 0; i < btns.length; i++)
-      btns[i].addEventListener('click', function () { setLevel(this.getAttribute('data-level')); });
+    // Bind the level + refresh controls. Re-run after a refresh swaps in fresh
+    // DOM nodes so the new buttons are wired up again.
+    function bindControls() {
+      var btns = document.querySelectorAll('.lvl');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('active', btns[i].getAttribute('data-level') === level);
+        btns[i].addEventListener('click', function () { setLevel(this.getAttribute('data-level')); });
+      }
+      var rb = document.getElementById('refresh-btn');
+      if (rb) rb.addEventListener('click', function () { refresh(this); });
+    }
 
+    // Reload just the data: fetch the same URL, swap the page content (reusing
+    // the live map node so the Leaflet view is preserved), and redraw markers.
+    function refresh(btn) {
+      if (btn) { btn.disabled = true; btn.classList.add('busy'); }
+      fetch(location.href, { credentials: 'same-origin', cache: 'no-store' })
+        .then(function (res) { if (!res.ok) throw new Error(res.status); return res.text(); })
+        .then(function (html) {
+          var doc = new DOMParser().parseFromString(html, 'text/html');
+          window.__MAP__ = readMapData(doc);
+          var newWrap = doc.querySelector('.wrap');
+          var curWrap = document.querySelector('.wrap');
+          var liveMap = document.getElementById('map');
+          if (newWrap && curWrap && liveMap) {
+            var slot = newWrap.querySelector('#map');
+            if (slot) slot.replaceWith(liveMap); // keep the live Leaflet instance
+            curWrap.replaceWith(newWrap);
+            bindControls();
+            renderMap(false);
+            var st = document.getElementById('refresh-status');
+            if (st) st.textContent = 'Updated ' + new Date().toLocaleTimeString();
+          }
+        })
+        .catch(function () {
+          var st = document.getElementById('refresh-status');
+          if (st) st.textContent = 'Refresh failed';
+        })
+        .finally(function () {
+          var rb = document.getElementById('refresh-btn');
+          if (rb) { rb.disabled = false; rb.classList.remove('busy'); }
+        });
+    }
+
+    bindControls();
     setLevel('cities');
   })();
 </script>
@@ -492,9 +546,9 @@ export async function onRequestGet({ request, env }) {
 
   const db = env.DB;
   const empty = { visitors: 0, views: 0, pages: 0, countries: 0 };
-  const render = (totals, geo, topPages, countries, regions, cities, orgs, refs) =>
+  const render = (totals, geo, topPages, countryPoints, regions, cities, orgs, refs) =>
     new Response(
-      page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities, orgs, refs }),
+      page({ range, fromStr, toStr, label, totals, geo, topPages, countryPoints, regions, cities, orgs, refs }),
       { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } },
     );
 
@@ -521,11 +575,15 @@ export async function onRequestGet({ request, env }) {
       .bind(start, end)
       .all();
 
-    const countries = await db
+    // Country-level map markers: one point per country at its average
+    // Cloudflare-reported coordinate (so the country dot lands on the country).
+    const countryPoints = await db
       .prepare(
-        `SELECT country, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
-         FROM pageviews WHERE ts >= ? AND ts < ? AND country IS NOT NULL AND country != ''
-         GROUP BY country ORDER BY visitors DESC`,
+        `SELECT country, AVG(lat) AS lat, AVG(lng) AS lng,
+                COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
+         FROM pageviews
+         WHERE ts >= ? AND ts < ? AND lat IS NOT NULL AND country IS NOT NULL AND country != ''
+         GROUP BY country ORDER BY visitors DESC LIMIT 300`,
       )
       .bind(start, end)
       .all();
@@ -599,7 +657,7 @@ export async function onRequestGet({ request, env }) {
       totals,
       geo.results || [],
       pages.results || [],
-      countries.results || [],
+      countryPoints.results || [],
       regions.results || [],
       cities.results || [],
       orgs,
