@@ -1,0 +1,10 @@
+# Security headers for the static site (Cloudflare Pages).
+# The /insights, /track, /oembed Functions set their own headers in code.
+# X-Frame-Options is SAMEORIGIN (not DENY) so the homepage can iframe the
+# same-origin satmap.html; cross-origin framing is still blocked.
+/*
+  X-Frame-Options: SAMEORIGIN
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()

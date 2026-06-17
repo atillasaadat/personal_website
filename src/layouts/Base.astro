@@ -132,7 +132,7 @@ const structuredData = {
     <meta name="twitter:image:alt" content={title} />
 
     <!-- Structured data: Person + WebSite sitewide, plus per-page nodes. -->
-    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData).replace(/</g, '\\u003c')} />
 
     <!-- oEmbed discovery (rich link previews for consumers that prefer oEmbed) -->
     <link

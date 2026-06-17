@@ -602,20 +602,58 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
 </body></html>`;
 }
 
+// Defensive headers for every /insights response: this is a private admin page,
+// so forbid framing (clickjacking the clear button), MIME sniffing, referrer
+// leakage of the URL, and any caching.
+const SECURITY_HEADERS = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'no-referrer',
+  'Cache-Control': 'no-store',
+};
+
+// Length-independent only past the length check, but the password length is not
+// the secret here; this removes the early-exit timing signal of `===`.
+function safeEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+// True when the request was initiated by another site. Browsers send
+// Sec-Fetch-Site on all modern requests and an Origin header on every POST, so
+// a forged cross-site form submission is reliably detectable. Requests with
+// neither header aren't browser-driven (no victim credentials to abuse).
+function isCrossSite(request) {
+  const site = request.headers.get('Sec-Fetch-Site');
+  if (site && site !== 'same-origin' && site !== 'none') return true;
+  const origin = request.headers.get('Origin');
+  if (origin) {
+    try {
+      if (new URL(origin).host !== new URL(request.url).host) return true;
+    } catch (e) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Basic-auth gate shared by the dashboard (GET) and the clear-data action
 // (POST). Returns a Response to short-circuit, or null when authorized.
 function authGate(request, env) {
   if (!env.ADMIN_PASSWORD) {
     return new Response('Set the ADMIN_PASSWORD environment variable to enable /insights.', {
       status: 500,
+      headers: SECURITY_HEADERS,
     });
   }
   const auth = request.headers.get('Authorization') || '';
   const expected = 'Basic ' + btoa('admin:' + env.ADMIN_PASSWORD);
-  if (auth !== expected) {
+  if (!safeEqual(auth, expected)) {
     return new Response('Authentication required.', {
       status: 401,
-      headers: { 'WWW-Authenticate': 'Basic realm="insights", charset="UTF-8"' },
+      headers: { ...SECURITY_HEADERS, 'WWW-Authenticate': 'Basic realm="insights", charset="UTF-8"' },
     });
   }
   return null;
@@ -624,12 +662,18 @@ function authGate(request, env) {
 // POST /insights with action=clear wipes all recorded visits. Behind the same
 // Basic Auth as the dashboard; the UI also requires an explicit confirmation.
 export async function onRequestPost({ request, env }) {
+  // Block cross-site POSTs: cached Basic Auth is auto-resent by the browser, so
+  // without this a malicious page could CSRF this destructive action.
+  if (isCrossSite(request)) {
+    return new Response('Cross-site request blocked.', { status: 403, headers: SECURITY_HEADERS });
+  }
+
   const gate = authGate(request, env);
   if (gate) return gate;
 
   const form = await request.formData().catch(() => null);
   if (!form || form.get('action') !== 'clear') {
-    return new Response('Bad request.', { status: 400 });
+    return new Response('Bad request.', { status: 400, headers: SECURITY_HEADERS });
   }
 
   try {
@@ -639,7 +683,7 @@ export async function onRequestPost({ request, env }) {
   }
 
   // Redirect back to the dashboard so a refresh shows the now-empty data.
-  return new Response(null, { status: 303, headers: { Location: '/insights' } });
+  return new Response(null, { status: 303, headers: { ...SECURITY_HEADERS, Location: '/insights' } });
 }
 
 export async function onRequestGet({ request, env }) {
@@ -674,7 +718,7 @@ export async function onRequestGet({ request, env }) {
   const render = (totals, geo, topPages, countries, regions, cities, orgs, refs, sources) =>
     new Response(
       page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities, orgs, refs, sources }),
-      { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } },
+      { headers: { ...SECURITY_HEADERS, 'Content-Type': 'text/html; charset=utf-8' } },
     );
 
   if (!db) return render(empty, [], [], [], [], [], [], [], []);
