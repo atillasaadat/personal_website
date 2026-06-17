@@ -621,17 +621,21 @@ function safeEqual(a, b) {
   return diff === 0;
 }
 
-// True when the request was initiated by another site. Browsers send
-// Sec-Fetch-Site on all modern requests and an Origin header on every POST, so
-// a forged cross-site form submission is reliably detectable. Requests with
-// neither header aren't browser-driven (no victim credentials to abuse).
+// True when the request was initiated by another site (a forged cross-site
+// submission). Sec-Fetch-Site is sent by all modern browsers and is
+// authoritative when present; only a "cross-site" initiator is a forgery
+// (same-origin / same-site / none are legitimate, e.g. our own form). For
+// older clients lacking Fetch Metadata, fall back to comparing the Origin host
+// (ignoring an opaque "null" Origin, which Referrer-Policy can produce on a
+// legitimate same-origin POST). Requests with neither header aren't
+// browser-driven, so there are no victim credentials to abuse.
 function isCrossSite(request) {
   const site = request.headers.get('Sec-Fetch-Site');
-  if (site && site !== 'same-origin' && site !== 'none') return true;
+  if (site) return site === 'cross-site';
   const origin = request.headers.get('Origin');
-  if (origin) {
+  if (origin && origin !== 'null') {
     try {
-      if (new URL(origin).host !== new URL(request.url).host) return true;
+      return new URL(origin).host !== new URL(request.url).host;
     } catch (e) {
       return true;
     }
