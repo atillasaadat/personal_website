@@ -380,10 +380,22 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countryPoin
       if (!map) {
         map = L.map('map', { worldCopyJump: true, minZoom: 1, maxZoom: 12, attributionControl: true })
           .setView([25, 0], 2);
-        L.tileLayer('https://{s}.basemap.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        var carto = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}{r}.png', {
           subdomains: 'abcd', maxZoom: 19,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         }).addTo(map);
+        // If CARTO ever fails to serve tiles, fall back to OSM so the map is
+        // never left blank behind the markers.
+        var fellBack = false;
+        carto.on('tileerror', function () {
+          if (fellBack) return;
+          fellBack = true;
+          map.removeLayer(carto);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            subdomains: 'abc', maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          }).addTo(map);
+        });
       }
       if (layer) { map.removeLayer(layer); layer = null; }
 
