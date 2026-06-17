@@ -96,11 +96,15 @@ export async function onRequestGet({ request, env }) {
   const lng = parseFloat(cf.longitude);
   const asn = Number.isFinite(cf.asn) ? cf.asn : parseInt(cf.asn, 10);
   const ref = refHost(url.searchParams.get('r'));
+  // Optional ?source= tag from the landing link (e.g. ?source=CV). Visitor-
+  // supplied, so strip to a sane charset, trim, and cap length.
+  const source =
+    (url.searchParams.get('s') || '').replace(/[^\w .\-/]+/g, '').trim().slice(0, 64) || null;
 
   try {
     if (env.DB) {
       await env.DB.prepare(
-        'INSERT INTO pageviews (ts, path, city, region, country, lat, lng, asn, org, ref, vid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO pageviews (ts, path, city, region, country, lat, lng, asn, org, ref, source, vid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       )
         .bind(
           Date.now(),
@@ -113,6 +117,7 @@ export async function onRequestGet({ request, env }) {
           Number.isFinite(asn) ? asn : null,
           cf.asOrganization || null,
           ref,
+          source,
           vid,
         )
         .run();

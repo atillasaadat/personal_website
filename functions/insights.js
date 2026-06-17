@@ -86,7 +86,7 @@ function esc(v) {
   );
 }
 
-function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities, orgs, refs }) {
+function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities, orgs, refs, sources }) {
   const today = ymd(Date.now());
 
   const tabs = RANGES.map(
@@ -150,6 +150,14 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
         })
         .join('')
     : '<tr><td colspan="3" class="empty">No referrer data yet.</td></tr>';
+
+  const sourceRows = sources.length
+    ? sources
+        .map(
+          (r) => `<tr><td><span class="tag company">tag</span>${esc(r.source)}</td><td class="num">${r.visitors}</td><td class="num">${r.views}</td></tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="3" class="empty">No tagged-link visits yet. Add <code>?source=NAME</code> to a link (e.g. your CV) to attribute clicks here.</td></tr>';
 
   // Country and region levels are choropleths: the client matches these keyed
   // values onto GeoJSON boundary polygons (ISO-2 for countries, ISO-2 + region
@@ -237,6 +245,8 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
   td a { color:#7ea8ff; text-decoration:none; }
   td a:hover { color:#5eead4; }
   .muted { color:#7f8db0; }
+  code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:0.88em;
+         background:rgba(126,168,255,0.12); padding:0.05em 0.35em; border-radius:4px; }
   .empty { color:#aab8d4; text-align:center; padding:1.25rem; }
   .tag { display:inline-block; font-size:0.62rem; text-transform:uppercase; letter-spacing:0.05em;
          padding:0.08rem 0.4rem; border-radius:5px; margin-right:0.55rem; vertical-align:middle;
@@ -327,6 +337,12 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
       </table>
     </div>
   </div>
+
+  <h2>Link sources <span class="hint">from <code>?source=</code> tags you add to your links (CV, business card, ...)</span></h2>
+  <table>
+    <thead><tr><th>Source tag</th><th class="num">Visitors</th><th class="num">Views</th></tr></thead>
+    <tbody>${sourceRows}</tbody>
+  </table>
 
   <h2>By location</h2>
   <table>
@@ -655,13 +671,13 @@ export async function onRequestGet({ request, env }) {
 
   const db = env.DB;
   const empty = { visitors: 0, views: 0, pages: 0, countries: 0 };
-  const render = (totals, geo, topPages, countries, regions, cities, orgs, refs) =>
+  const render = (totals, geo, topPages, countries, regions, cities, orgs, refs, sources) =>
     new Response(
-      page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities, orgs, refs }),
+      page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities, orgs, refs, sources }),
       { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } },
     );
 
-  if (!db) return render(empty, [], [], [], [], [], [], []);
+  if (!db) return render(empty, [], [], [], [], [], [], [], []);
 
   try {
     const totals =
@@ -731,6 +747,7 @@ export async function onRequestGet({ request, env }) {
     // if migrations.sql hasn't been applied to this database yet.
     let orgs = [];
     let refs = [];
+    let sources = [];
     try {
       const o = await db
         .prepare(
@@ -757,6 +774,19 @@ export async function onRequestGet({ request, env }) {
     } catch (e) {
       // ref column missing: skip traffic sources
     }
+    try {
+      const s = await db
+        .prepare(
+          `SELECT source, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
+           FROM pageviews WHERE ts >= ? AND ts < ? AND source IS NOT NULL AND source != ''
+           GROUP BY source ORDER BY visitors DESC, views DESC LIMIT 100`,
+        )
+        .bind(start, end)
+        .all();
+      sources = s.results || [];
+    } catch (e) {
+      // source column missing: skip tagged-link sources
+    }
 
     return render(
       totals,
@@ -767,9 +797,10 @@ export async function onRequestGet({ request, env }) {
       cities.results || [],
       orgs,
       refs,
+      sources,
     );
   } catch (e) {
     // most likely: schema.sql not applied yet (no such table: pageviews)
-    return render(empty, [], [], [], [], [], [], []);
+    return render(empty, [], [], [], [], [], [], [], []);
   }
 }

@@ -19,9 +19,11 @@ CREATE TABLE IF NOT EXISTS pageviews (
   org     TEXT,               -- network organization / ISP (cf.asOrganization);
                               -- often the company or institution for corp/campus visits
   ref     TEXT,               -- external referrer hostname that sent the visitor
+  source  TEXT,               -- ?source= tag from the landing link (e.g. "CV")
   vid     TEXT    NOT NULL    -- anonymous per-visitor id (cookie)
 );
 
-CREATE INDEX IF NOT EXISTS idx_pageviews_ts  ON pageviews(ts);
-CREATE INDEX IF NOT EXISTS idx_pageviews_vid ON pageviews(vid);
-CREATE INDEX IF NOT EXISTS idx_pageviews_org ON pageviews(org);
+CREATE INDEX IF NOT EXISTS idx_pageviews_ts     ON pageviews(ts);
+CREATE INDEX IF NOT EXISTS idx_pageviews_vid    ON pageviews(vid);
+CREATE INDEX IF NOT EXISTS idx_pageviews_org    ON pageviews(org);
+CREATE INDEX IF NOT EXISTS idx_pageviews_source ON pageviews(source);

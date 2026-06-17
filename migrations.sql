@@ -15,6 +15,12 @@ ALTER TABLE pageviews ADD COLUMN org TEXT;
 ALTER TABLE pageviews ADD COLUMN ref TEXT;
 CREATE INDEX IF NOT EXISTS idx_pageviews_org ON pageviews(org);
 
+-- Migration: add the ?source= landing-link tag (e.g. ?source=CV). Run before
+-- (or together with) deploying the track.js change, since the insert names this
+-- column. A re-run errors harmlessly if the column already exists.
+ALTER TABLE pageviews ADD COLUMN source TEXT;
+CREATE INDEX IF NOT EXISTS idx_pageviews_source ON pageviews(source);
+
 -- The site wasn't public before bot-filtering was added, so the pre-launch rows
 -- are all crawlers/scanners. To start clean, also run:
 --   npx wrangler d1 execute site-analytics --remote --command "DELETE FROM pageviews;"

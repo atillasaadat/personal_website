@@ -180,9 +180,14 @@ const structuredData = {
         // external source that brought the visitor here only lives client-side.
         try {
           if (!/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) {
+            // ?source= (or ?utm_source=) tags a landing link so the dashboard
+            // can attribute the visit (e.g. the link in my CV: ?source=CV).
+            var qs = new URLSearchParams(location.search);
+            var src = (qs.get('source') || qs.get('utm_source') || '').slice(0, 64);
             new Image().src =
               '/track?p=' + encodeURIComponent(location.pathname) +
               '&r=' + encodeURIComponent(document.referrer || '') +
+              (src ? '&s=' + encodeURIComponent(src) : '') +
               '&t=' + Date.now();
           }
         } catch (e) {}
