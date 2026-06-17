@@ -1,0 +1,7 @@
+# atillasaadat.com
+# Allow all crawlers; keep the private analytics dashboard out of the index.
+User-agent: *
+Allow: /
+Disallow: /insights
+
+Sitemap: https://atillasaadat.com/sitemap-index.xml
