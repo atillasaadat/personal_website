@@ -20,11 +20,16 @@ const DEFAULT_RANGE = 'today';
 
 // Consumer ISPs / telecoms / mobile carriers: residential traffic, not an
 // employer or institution. Used only to de-emphasize rows on the dashboard.
-const CONSUMER_ISP = /comcast|xfinity|verizon|at&?t|t-?mobile|sprint|spectrum|charter|cox communic|centurylink|lumen|frontier|optimum|altice|cablevision|telus|rogers|bell canada|shaw|videotron|cogeco|vodafone|orange|telefonica|movistar|deutsche telekom|\btelekom\b|telstra|optus|tpg|sky\b|virgin media|bt group|british telecom|talktalk|plusnet|jio|airtel|bsnl|reliance|china telecom|china unicom|china mobile|chinanet|kddi|\bntt\b|softbank|biglobe|sk broadband|korea telecom|lg uplus|starhub|singtel|maxis|telekom malaysia|pldt|globe telecom|claro|vivo|tim\b|net virtua|telmex|izzi|megacable|free sas|sfr|bouygues|proximus|telenet|kpn|ziggo|swisscom|sunrise|magenta|a1 telekom|telia|telenor|tele2|elisa|dna oyj|spark\b|vocus|starlink|hughesnet|viasat|cellular|wireless|broadband|telecom|telecomunica|t[ée]l[ée]com|cable|fibernet|fiber\b|fibre|\bisp\b|internet service|communications/i;
+const CONSUMER_ISP = /comcast|xfinity|verizon|at&?t|t-?mobile|sprint|spectrum|charter|cox communic|centurylink|lumen|frontier|optimum|altice|cablevision|telus|rogers|bell canada|shaw|videotron|cogeco|vodafone|orange|telefonica|movistar|deutsche telekom|\btelekom\b|telstra|optus|tpg|sky\b|virgin media|bt group|british telecom|talktalk|plusnet|jio|airtel|bsnl|reliance|china telecom|china unicom|china mobile|chinanet|kddi|\bntt\b|softbank|biglobe|sk broadband|korea telecom|lg uplus|starhub|singtel|maxis|telekom malaysia|pldt|globe telecom|claro|vivo|tim\b|net virtua|telmex|izzi|megacable|free sas|sfr|bouygues|proximus|telenet|kpn|ziggo|swisscom|sunrise|magenta|a1 telekom|telia|telenor|tele2|elisa|dna oyj|spark\b|vocus|starlink|hughesnet|viasat|cellular|wireless|broadband|telecom|telecomunica|t[ée]l[ée]com|cable|fibernet|fiber\b|fibre|\bisp\b|internet service|communications|indosat|ooredoo|hutchison|\bioh\b|smartfren|biznet|axiata|grameenphone|banglalink|etisalat|turkcell|chunghwa|viettel|vinaphone|mobifone|\bdito\b/i;
 
 // Hosting / VPS / cloud networks: automated traffic, also de-emphasized. (The
 // beacon already drops most of these; the big clouds are kept and land here.)
-const HOSTING_ORG = /amazon|aws\b|google|\bgcp\b|microsoft|azure|oracle|\bibm\b|digitalocean|ovh|hetzner|linode|akamai|fastly|cloudflare|vultr|contabo|scaleway|leaseweb|\bm247\b|choopa|psychz|hostwinds|datacamp|colocrossing|quadranet|hostinger|namecheap|godaddy|bluehost|dreamhost|ionos|alibaba|tencent|huawei cloud|data ?cent(er|re)|dedicated server|virtual server|\bvps\b|colocation|cloud|hosting|server/i;
+const HOSTING_ORG = /amazon|aws\b|google|\bgcp\b|microsoft|azure|oracle|\bibm\b|digitalocean|ovh|hetzner|linode|akamai|fastly|cloudflare|vultr|contabo|scaleway|leaseweb|\bm247\b|choopa|psychz|hostwinds|datacamp|colocrossing|quadranet|hostinger|namecheap|godaddy|bluehost|dreamhost|ionos|alibaba|tencent|huawei cloud|data ?cent(er|re)|dedicated server|virtual server|\bvps\b|colocation|cloud|hosting|server|code200|oxylabs|smartproxy|bright ?data|packethub|oculus networks|hurricane electric|cogent|zayo|arelion|\bproxy\b/i;
+
+// Security / email gateways that fetch shared links to scan them: appliance
+// traffic, not a human employer, so treat as hosting noise. (Palo Alto, etc.
+// are deliberately excluded since they're also plausible real employers.)
+const LINK_SCANNER = /fortinet|forticlient|zscaler|proofpoint|mimecast|barracuda|forcepoint|netskope|menlo security|cisco umbrella/i;
 
 // Classify a network org so the dashboard can surface likely employer /
 // institution visits and dim consumer/hosting noise.
@@ -34,7 +39,7 @@ function classifyOrg(org) {
   if (/universit|college|\binstitut|\.edu\b|\beduc|\bschool\b|academ|polytechnic|\bcnrs\b|max[- ]planck|fraunhofer|govern|\.gov\b|\bnasa\b|\besa\b|jpl\b|national lab|laborator|research (council|center|centre|institute)|\bcern\b|hospital|\bnhs\b|\bmil\b|defen[cs]e|\barmy\b|\bnavy\b|air force/.test(o))
     return 'institution';
   if (CONSUMER_ISP.test(o)) return 'isp';
-  if (HOSTING_ORG.test(o)) return 'hosting';
+  if (HOSTING_ORG.test(o) || LINK_SCANNER.test(o)) return 'hosting';
   return 'company';
 }
 
