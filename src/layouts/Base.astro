@@ -13,14 +13,30 @@ interface Props {
   title: string;
   description?: string;
   image?: string;
+  /** 'article' for blog posts emits og:type=article + article:* meta. */
+  type?: 'website' | 'article';
+  /** ISO 8601 publish time (posts), used for article meta + JSON-LD. */
+  publishedTime?: string;
+  /** Post tags, surfaced as article:tag meta. */
+  tags?: string[];
+  /** Keep this page out of the index (e.g. 404, redirect shells). */
+  noindex?: boolean;
+  /** Extra schema.org node(s) merged into the page's JSON-LD @graph. */
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 const {
   title,
-  description = 'Atilla Saadat, Spacecraft GNC Engineer. Portfolio of spacecraft guidance, navigation, and control projects, research, and awards.',
+  description = 'Atilla Saadat is a Spacecraft GNC Engineer at Varda Space Industries. Portfolio of guidance, navigation and control, ADCS, and aerospace research projects, papers, and awards.',
+  type = 'website',
+  publishedTime,
+  tags = [],
+  noindex = false,
+  jsonLd,
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const SITE = (Astro.site?.toString() || 'https://atillasaadat.com/').replace(/\/$/, '');
 
 // Map the current route to its build-time Open Graph card (see
 // src/pages/og/[...route].png.ts). Unknown routes fall back to the home card.
@@ -30,6 +46,51 @@ if (path === '/projects') ogRoute = 'projects';
 else if (path === '/cv') ogRoute = 'cv';
 else if (path.startsWith('/post/')) ogRoute = 'post/' + path.slice('/post/'.length);
 const ogImage = new URL(`/og/${ogRoute}.png`, Astro.site);
+
+// Canonical profiles for the entity "Atilla Saadat" (schema.org sameAs).
+const sameAs = [
+  'https://linkedin.com/in/atillasaadat',
+  'https://github.com/atillasaadat',
+  'https://twitter.com/atillasaadat',
+  'https://devpost.com/atillasaadat',
+  'https://www.researchgate.net/profile/Atilla_Saadat',
+];
+
+// Sitewide structured data: the Person (knowledge-graph entity) and the
+// WebSite, both referenced by @id so per-page nodes (Article, breadcrumbs) can
+// point back at them without repeating the data.
+const personNode = {
+  '@type': 'Person',
+  '@id': `${SITE}/#person`,
+  name: 'Atilla Saadat',
+  url: `${SITE}/`,
+  image: `${SITE}/media/profile.jpg`,
+  jobTitle: 'Spacecraft GNC Engineer II',
+  worksFor: { '@type': 'Organization', name: 'Varda Space Industries' },
+  knowsAbout: [
+    'Spacecraft Guidance, Navigation and Control',
+    'Attitude Determination and Control Systems',
+    'Aerospace Engineering',
+    'Orbital Mechanics',
+    'Spacecraft Avionics',
+    'Machine Learning',
+  ],
+  sameAs,
+};
+const websiteNode = {
+  '@type': 'WebSite',
+  '@id': `${SITE}/#website`,
+  url: `${SITE}/`,
+  name: 'Atilla Saadat',
+  description,
+  inLanguage: 'en',
+  publisher: { '@id': `${SITE}/#person` },
+};
+const extraLd = Array.isArray(jsonLd) ? jsonLd : jsonLd ? [jsonLd] : [];
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [websiteNode, personNode, ...extraLd],
+};
 ---
 <!doctype html>
 <html lang="en">
@@ -38,13 +99,17 @@ const ogImage = new URL(`/og/${ogRoute}.png`, Astro.site);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="author" content="Atilla Saadat" />
+    <meta name="theme-color" content="#05080f" />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <meta name="generator" content={Astro.generator} />
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={type} />
     <meta property="og:site_name" content="Atilla Saadat" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
@@ -53,12 +118,21 @@ const ogImage = new URL(`/og/${ogRoute}.png`, Astro.site);
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content={title} />
+    {type === 'article' && publishedTime && (
+      <meta property="article:published_time" content={publishedTime} />
+    )}
+    {type === 'article' && <meta property="article:author" content="Atilla Saadat" />}
+    {type === 'article' && tags.map((t) => <meta property="article:tag" content={t} />)}
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@atillasaadat" />
     <meta name="twitter:creator" content="@atillasaadat" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={title} />
+
+    <!-- Structured data: Person + WebSite sitewide, plus per-page nodes. -->
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
 
     <!-- oEmbed discovery (rich link previews for consumers that prefer oEmbed) -->
     <link

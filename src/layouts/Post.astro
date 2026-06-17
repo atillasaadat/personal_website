@@ -14,8 +14,47 @@ const dateFmt = date.toLocaleDateString('en-US', {
   day: 'numeric',
   timeZone: 'UTC',
 });
+
+const SITE = (Astro.site?.toString() || 'https://atillasaadat.com/').replace(/\/$/, '');
+const url = new URL(Astro.url.pathname, Astro.site).toString();
+const published = date.toISOString();
+// Representative image for structured data (must be a real image, not a video):
+// use the cover when it's an image file, else fall back to the generated OG card.
+const coverIsImage = /\.(png|jpe?g|webp|gif|avif)$/i.test(cover || '');
+const articleImage = coverIsImage ? `${SITE}${cover}` : `${SITE}/og/post/${post.id}.png`;
+
+const articleLd = {
+  '@type': 'BlogPosting',
+  '@id': `${url}#article`,
+  mainEntityOfPage: url,
+  url,
+  headline: title,
+  description,
+  image: articleImage,
+  datePublished: published,
+  dateModified: published,
+  author: { '@id': `${SITE}/#person` },
+  publisher: { '@id': `${SITE}/#person` },
+  ...(tags.length ? { keywords: tags.join(', ') } : {}),
+};
+const breadcrumbLd = {
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
+    { '@type': 'ListItem', position: 2, name: 'Projects', item: `${SITE}/#projects` },
+    { '@type': 'ListItem', position: 3, name: title, item: url },
+  ],
+};
 ---
-<Base title={`${title} | Atilla Saadat`} description={description} image={cover}>
+<Base
+  title={`${title} | Atilla Saadat`}
+  description={description}
+  image={cover}
+  type="article"
+  publishedTime={published}
+  tags={tags}
+  jsonLd={[articleLd, breadcrumbLd]}
+>
   <article class="container section">
     <header class="post-head prose">
       <p class="kicker">
