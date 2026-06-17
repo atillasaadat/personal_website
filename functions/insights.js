@@ -81,7 +81,7 @@ function esc(v) {
   );
 }
 
-function page({ range, fromStr, toStr, label, totals, geo, topPages, countryPoints, regions, cities, orgs, refs }) {
+function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities, orgs, refs }) {
   const today = ymd(Date.now());
 
   const tabs = RANGES.map(
@@ -146,19 +146,29 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countryPoin
         .join('')
     : '<tr><td colspan="3" class="empty">No referrer data yet.</td></tr>';
 
-  // Each map level is a marker layer placed at the average Cloudflare-reported
-  // coordinate for that place, so the Leaflet tile map (which already draws
-  // country + US state borders) stays crisp at every zoom level.
-  const toMarkers = (rows, nameOf) =>
-    rows
-      .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng))
-      .map((r) => ({ name: nameOf(r), coords: [r.lat, r.lng], v: r.visitors, w: r.views }));
+  // Country and region levels are choropleths: the client matches these keyed
+  // values onto GeoJSON boundary polygons (ISO-2 for countries, ISO-2 + region
+  // name for states/provinces) and shades them. Cities stay as point markers,
+  // placed at the average Cloudflare-reported coordinate for the city.
+  const countryAgg = {};
+  for (const r of countries) {
+    if (r.country) countryAgg[r.country] = { v: r.visitors, w: r.views };
+  }
+  const regionAgg = {};
+  for (const r of regions) {
+    if (r.country && r.region)
+      regionAgg[`${r.country}|${String(r.region).toLowerCase()}`] = { v: r.visitors, w: r.views };
+  }
+  const cityMarkers = cities
+    .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng))
+    .map((r) => ({
+      name: [r.city, r.region, r.country].filter(Boolean).join(', '),
+      coords: [r.lat, r.lng],
+      v: r.visitors,
+      w: r.views,
+    }));
 
-  const mapData = {
-    countries: toMarkers(countryPoints, (r) => r.country || '?'),
-    regions: toMarkers(regions, (r) => [r.region, r.country].filter(Boolean).join(', ')),
-    cities: toMarkers(cities, (r) => [r.city, r.region, r.country].filter(Boolean).join(', ')),
-  };
+  const mapData = { countries: countryAgg, regions: regionAgg, cities: cityMarkers };
 
   return `<!doctype html>
 <html lang="en"><head>
@@ -286,7 +296,7 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countryPoin
   <div id="map"></div>
   <div class="legend">
     <span>Fewer</span> <span class="bar"></span> <span>More visitors</span>
-    <span class="muted">each dot is one location, color &amp; size scale with visitors</span>
+    <span class="muted">countries &amp; regions shaded by visitors; cities shown as points</span>
     <span style="margin-left:auto" id="legend-peak"></span>
   </div>
 
@@ -371,38 +381,76 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countryPoin
       return 'rgb(244,63,94)';
     }
 
-    function rows() { return (window.__MAP__ || {})[level] || []; }
+    // Current level's data: cities is an array of points; countries/regions are
+    // objects keyed by ISO-2 (or "ISO-2|region name") -> { v, w }.
+    function curData() {
+      return (window.__MAP__ || {})[level] || (level === 'cities' ? [] : {});
+    }
 
-    // Render (or re-render) the marker layer for the current level. When
-    // fit is true, frame the points; otherwise keep the user's current view.
-    function renderMap(fit) {
-      if (!window.L) return;
-      if (!map) {
-        map = L.map('map', { worldCopyJump: true, minZoom: 1, maxZoom: 12, attributionControl: true })
-          .setView([25, 0], 2);
-        var carto = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}{r}.png', {
-          subdomains: 'abcd', maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        }).addTo(map);
-        // If CARTO ever fails to serve tiles, fall back to OSM so the map is
-        // never left blank behind the markers.
-        var fellBack = false;
-        carto.on('tileerror', function () {
-          if (fellBack) return;
-          fellBack = true;
-          map.removeLayer(carto);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            subdomains: 'abc', maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-          }).addTo(map);
-        });
+    // GeoJSON boundary sources for the choropleth levels (Natural Earth), fetched
+    // once on first use and cached. Countries match on ISO-2; states/provinces
+    // match on ISO-2 + region name.
+    var GEO = { countries: null, regions: null };
+    var GEO_URL = {
+      countries: 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_110m_admin_0_countries.geojson',
+      regions: 'https://cdn.jsdelivr.net/gh/nvkelso/natural-earth-vector@master/geojson/ne_50m_admin_1_states_provinces.geojson',
+    };
+
+    function valueFor(lvl, feature, data) {
+      var p = feature.properties || {};
+      if (lvl === 'countries') {
+        var code = p.ISO_A2 && p.ISO_A2 !== '-99' ? p.ISO_A2 : p.ISO_A2_EH;
+        return code ? data[code] : null;
       }
-      if (layer) { map.removeLayer(layer); layer = null; }
+      var iso = p.iso_a2;
+      if (!iso || iso === '-99') return null;
+      var names = [p.name, p.gn_name, p.name_en, p.woe_name, p.postal];
+      for (var i = 0; i < names.length; i++) {
+        if (!names[i]) continue;
+        var d = data[iso + '|' + String(names[i]).toLowerCase()];
+        if (d) return d;
+      }
+      return null;
+    }
 
-      var data = rows();
+    function featName(lvl, feature) {
+      var p = feature.properties || {};
+      return lvl === 'countries' ? (p.ADMIN || p.NAME || p.name || '?') : (p.name || p.gn_name || '?');
+    }
+
+    function setLegend(text) {
+      var peak = document.getElementById('legend-peak');
+      if (peak) peak.textContent = text;
+    }
+
+    function ensureMap() {
+      if (map) return;
+      // preferCanvas keeps thousands of boundary polygons fast.
+      map = L.map('map', { worldCopyJump: true, minZoom: 1, maxZoom: 12, preferCanvas: true, attributionControl: true })
+        .setView([25, 0], 2);
+      var carto = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}{r}.png', {
+        subdomains: 'abcd', maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      }).addTo(map);
+      // If CARTO ever fails to serve tiles, fall back to OSM so the basemap is
+      // never left blank behind the data.
+      var fellBack = false;
+      carto.on('tileerror', function () {
+        if (fellBack) return;
+        fellBack = true;
+        map.removeLayer(carto);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          subdomains: 'abc', maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        }).addTo(map);
+      });
+    }
+
+    // Cities: one circle marker per location, sized & colored by visitors.
+    function renderCities(fit) {
+      var data = curData();
       var max = 1;
       for (var i = 0; i < data.length; i++) if (data[i].v > max) max = data[i].v;
-
       var group = L.layerGroup();
       var pts = [];
       for (var j = 0; j < data.length; j++) {
@@ -419,14 +467,58 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countryPoin
       }
       group.addTo(map);
       layer = group;
-
-      var peak = document.getElementById('legend-peak');
-      if (peak) {
-        var noun = level === 'countries' ? 'countr' + (pts.length === 1 ? 'y' : 'ies')
-          : (pts.length === 1 ? level.slice(0, -1) : level);
-        peak.textContent = pts.length + ' located ' + noun + ' \\u00b7 peak ' + max + ' visitors';
-      }
+      setLegend(pts.length + ' located ' + (pts.length === 1 ? 'city' : 'cities') + ' \\u00b7 peak ' + max + ' visitors');
       if (fit && pts.length) { try { map.fitBounds(pts, { padding: [40, 40], maxZoom: 6 }); } catch (e) {} }
+    }
+
+    // Countries / regions: shade boundary polygons by visitor count.
+    function drawChoropleth(lvl, fit) {
+      var data = curData();
+      var max = 1, total = 0;
+      for (var k in data) { total++; if (data[k].v > max) max = data[k].v; }
+      var matched = [];
+      layer = L.geoJSON(GEO[lvl], {
+        style: function (f) {
+          var d = valueFor(lvl, f, data);
+          if (!d) return { color: '#37466a', weight: 0.5, fill: true, fillColor: '#16243f', fillOpacity: 0.1 };
+          var t = Math.sqrt(d.v / max);
+          return { color: '#cdd9f2', weight: 0.8, fill: true, fillColor: colorFor(t), fillOpacity: 0.72 };
+        },
+        onEachFeature: function (f, lyr) {
+          var d = valueFor(lvl, f, data);
+          if (!d) return;
+          matched.push(lyr);
+          lyr.bindTooltip(featName(lvl, f) + ': ' + d.v + ' visitors, ' + d.w + ' views', { sticky: true });
+          lyr.on('mouseover', function () { this.setStyle({ weight: 2, color: '#5eead4' }); if (this.bringToFront) this.bringToFront(); });
+          lyr.on('mouseout', function () { if (layer) layer.resetStyle(this); });
+        },
+      }).addTo(map);
+      var noun = lvl === 'countries' ? (total === 1 ? 'country' : 'countries') : (total === 1 ? 'region' : 'regions');
+      setLegend(matched.length + ' of ' + total + ' ' + noun + ' mapped \\u00b7 peak ' + max + ' visitors');
+      if (fit && matched.length) {
+        try { map.fitBounds(L.featureGroup(matched).getBounds(), { padding: [40, 40], maxZoom: 6 }); } catch (e) {}
+      }
+    }
+
+    // Render the current level. Cities draw immediately; country/region lazily
+    // fetch their boundary GeoJSON the first time, then draw.
+    function renderMap(fit) {
+      if (!window.L) return;
+      ensureMap();
+      if (layer) { map.removeLayer(layer); layer = null; }
+
+      if (level === 'cities') { renderCities(fit); map.invalidateSize(); return; }
+      if (GEO[level]) { drawChoropleth(level, fit); map.invalidateSize(); return; }
+
+      setLegend('Loading boundaries\\u2026');
+      var want = level;
+      fetch(GEO_URL[want], { cache: 'force-cache' })
+        .then(function (res) { if (!res.ok) throw new Error(res.status); return res.json(); })
+        .then(function (gj) {
+          GEO[want] = gj;
+          if (level === want) { drawChoropleth(want, fit); map.invalidateSize(); }
+        })
+        .catch(function () { if (level === want) setLegend('Could not load boundaries'); });
       map.invalidateSize();
     }
 
@@ -558,9 +650,9 @@ export async function onRequestGet({ request, env }) {
 
   const db = env.DB;
   const empty = { visitors: 0, views: 0, pages: 0, countries: 0 };
-  const render = (totals, geo, topPages, countryPoints, regions, cities, orgs, refs) =>
+  const render = (totals, geo, topPages, countries, regions, cities, orgs, refs) =>
     new Response(
-      page({ range, fromStr, toStr, label, totals, geo, topPages, countryPoints, regions, cities, orgs, refs }),
+      page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities, orgs, refs }),
       { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } },
     );
 
@@ -587,14 +679,12 @@ export async function onRequestGet({ request, env }) {
       .bind(start, end)
       .all();
 
-    // Country-level map markers: one point per country at its average
-    // Cloudflare-reported coordinate (so the country dot lands on the country).
-    const countryPoints = await db
+    // Country choropleth values, keyed by ISO-2 country code on the client.
+    const countries = await db
       .prepare(
-        `SELECT country, AVG(lat) AS lat, AVG(lng) AS lng,
-                COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
+        `SELECT country, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
          FROM pageviews
-         WHERE ts >= ? AND ts < ? AND lat IS NOT NULL AND country IS NOT NULL AND country != ''
+         WHERE ts >= ? AND ts < ? AND country IS NOT NULL AND country != ''
          GROUP BY country ORDER BY visitors DESC LIMIT 300`,
       )
       .bind(start, end)
@@ -609,15 +699,13 @@ export async function onRequestGet({ request, env }) {
       .bind(start, end)
       .all();
 
-    // Marker layers: one point per region / city, placed at the average
-    // Cloudflare-reported coordinate for that place.
+    // Region choropleth values, keyed by "<ISO-2>|<region name>" on the client.
     const regions = await db
       .prepare(
-        `SELECT region, country, AVG(lat) AS lat, AVG(lng) AS lng,
-                COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
+        `SELECT region, country, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
          FROM pageviews
-         WHERE ts >= ? AND ts < ? AND lat IS NOT NULL AND region IS NOT NULL AND region != ''
-         GROUP BY country, region ORDER BY visitors DESC LIMIT 500`,
+         WHERE ts >= ? AND ts < ? AND region IS NOT NULL AND region != ''
+         GROUP BY country, region ORDER BY visitors DESC LIMIT 800`,
       )
       .bind(start, end)
       .all();
@@ -669,7 +757,7 @@ export async function onRequestGet({ request, env }) {
       totals,
       geo.results || [],
       pages.results || [],
-      countryPoints.results || [],
+      countries.results || [],
       regions.results || [],
       cities.results || [],
       orgs,
