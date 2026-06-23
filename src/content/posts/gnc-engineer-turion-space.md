@@ -4,7 +4,8 @@ description: "GNC Engineer for the Droid.001 and Droid.002 satellite missions: a
 date: 2024-09-21
 cover: "/media/covers/gnc-engineer-turion-space.mp4"
 tags: ["GNC", "Mission Ops", "Satellites"]
-highlight: "20,000+ on-orbit images captured with the autonomous mission planning tool I built"
+highlight: "21,000+ on-orbit images captured with the autonomous mission planning tool I built"
+highlightHref: "https://www.linkedin.com/posts/on-6122023-we-launched-droid001-today-ugcPost-7433224837478797313-gUjX/"
 ---
 
 At Turion Space, we’re pushing the boundaries of space technology, particularly with our work on space situational awareness and orbital debris mitigation. As a Guidance, Navigation, and Control (GNC) Engineer, I've developed the GNC systems and ensured the operational success of our first satellite **Droid.001**, and the in-development **Droid.002** (launching Q1 2025). This post provides a brief look at my contributions to spacecraft missions, focusing on significant moments, launch experiences, and my role in pushing the boundaries of space exploration.
@@ -16,6 +17,14 @@ In the cleanroom during AIT of Droid.001
 #### **The Journey of Droid.001: From Launch to Full Commissioning**
 
 Droid.001 marks a significant milestone for Turion Space as our first operational satellite, showcasing critical capabilities that pave the way for future missions. From launch to on-orbit commissioning, I was directly involved in ensuring the satellite's success from a GNC perspective. I conducted functional testing and assessed performance metrics on the GNC hardware to ensure optimal operation and resolve technical challenges throughout the mission.
+
+<div class="li-embeds">
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7433224837478797313" title="Turion Space Droid.001 launch and mission summary post on LinkedIn" height="620" frameborder="0" allowfullscreen loading="lazy"></iframe>
+  </figure>
+</div>
+
+**Turion Space LinkedIn post: Droid.001's full mission, from launch to deorbit**
 
 For Droid.001, I developed an **autonomous optimization and mission planning tool that manages end-to-end processes for RSO target pointing, star-tracker constraints, and ground station access**. It also optimizes the ideal image capture time based on lighting conditions, imager constraints, pixel occupancy, and more. Some of the simulation pictures and videos below showcase our post-launch endeavors.
 
