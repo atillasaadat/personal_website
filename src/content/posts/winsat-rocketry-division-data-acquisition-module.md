@@ -32,4 +32,4 @@ A testament to our dedication and this module's effectiveness: WinSAT's Rocketry
 
 **Video from launch at IREC 2019**
 
-<video controls preload="metadata" playsinline><source src="/media/winsat-rocketry-division-data-acquisition-module/vid00.mp4" type="video/mp4" /></video>
+<video class="media-tall" controls preload="metadata" playsinline><source src="/media/winsat-rocketry-division-data-acquisition-module/vid00.mp4" type="video/mp4" /></video>

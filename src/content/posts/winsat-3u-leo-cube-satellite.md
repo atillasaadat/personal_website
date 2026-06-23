@@ -56,7 +56,7 @@ Above all, the CSDC represents more than just a competition. It's a revolutionar
 
 **STK Demo of ADCS Nadir Pointing Mode using the B-dot Control Algorithm**
 
-<video controls preload="metadata" playsinline><source src="/media/winsat-3u-leo-cube-satellite/vid00.mp4" type="video/mp4" /></video>
+<video controls autoplay muted loop playsinline preload="auto"><source src="/media/winsat-3u-leo-cube-satellite/vid00.mp4" type="video/mp4" /></video>
 
 ![](/media/winsat-3u-leo-cube-satellite/img17.jpg)
 

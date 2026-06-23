@@ -15,7 +15,7 @@ In this chapter, a methodology for automating the power generation analysis of a
 
 ![](/media/masc-thesis-ch-4-automated-solar-power-generation-analysis/img00.jpg)
 
-<video controls preload="metadata" playsinline><source src="/media/masc-thesis-ch-4-automated-solar-power-generation-analysis/vid00.mp4" type="video/mp4" /></video>
+<video controls autoplay muted loop playsinline preload="auto"><source src="/media/masc-thesis-ch-4-automated-solar-power-generation-analysis/vid00.mp4" type="video/mp4" /></video>
 
 ![](/media/masc-thesis-ch-4-automated-solar-power-generation-analysis/img01.jpg)
 

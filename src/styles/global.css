@@ -77,6 +77,9 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
 }
 
 .section { padding-block: clamp(3.5rem, 8vw, 6rem); }
+/* Cancel the section's top padding when anchor-scrolling so the heading sits
+   just below the sticky header instead of a clamp(3.5rem,8vw,6rem) gap down. */
+.section[id] { scroll-margin-top: calc(-1 * clamp(3.5rem, 8vw, 6rem)); }
 
 .section-head { margin-bottom: 2.25rem; }
 .section-head h2 {
@@ -136,6 +139,17 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   margin: 0 auto;
 }
 .prose figure.figure-single figcaption a { color: var(--accent-2); }
+
+/* Tall (portrait) media: cap the height so it fits on screen instead of
+   running the full column width. Used for portrait phone videos/photos. */
+.prose video.media-tall,
+.prose figure.media-tall img {
+  max-height: 70vh;
+  width: auto;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 /* Caption paragraph next to a video / embed (added by the post layout script). */
 .prose p.media-caption {
@@ -273,8 +287,61 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
 }
 .prose .gallery-thumb.active,
 .prose .gallery-thumb:hover { opacity: 1; border-color: var(--accent); }
-.prose .gallery-count {
+.prose .gallery-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin-top: 0.4rem;
+}
+.prose .gallery-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #05080f;
+  color: var(--text-1);
+  cursor: pointer;
+  transition: opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.prose .gallery-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.prose .gallery-toggle .ico { width: 14px; height: 14px; fill: currentColor; }
+
+/* Circular progress ring: fills over the 4s interval to preview the next image. */
+.prose .gallery-ring {
+  position: absolute;
+  inset: -1px;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+.prose .gallery-ring circle {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100; /* empty when paused */
+}
+.prose .gallery.playing .gallery-ring circle {
+  animation: gallery-ring-progress 4s linear infinite;
+}
+@keyframes gallery-ring-progress {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prose .gallery.playing .gallery-ring circle { animation: none; }
+}
+.prose .gallery-toggle .ico-play { display: none; }
+.prose .gallery:not(.playing) .gallery-toggle .ico-pause { display: none; }
+.prose .gallery:not(.playing) .gallery-toggle .ico-play { display: block; }
+.prose .gallery-count {
+  margin: 0;
   text-align: right;
   font-family: var(--font-mono);
   font-size: 0.72rem;

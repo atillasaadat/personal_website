@@ -20,9 +20,10 @@ Using current methods stated by the Canadian Coast Guard, vessels traveling thro
 
 European Space Agency Atlantic from Space Workshop National Oceanographic Centre, Southampton, UK
 
-![](/media/cryoroute-globally-optimized-naval-routes-in-north-arctic-ocean/img03.jpg)
-
-UWillDiscover 2019 Conference, University of Windsor
+<figure class="figure-single media-tall">
+  <img src="/media/cryoroute-globally-optimized-naval-routes-in-north-arctic-ocean/img03.jpg" alt="UWillDiscover 2019 Conference, University of Windsor" />
+  <figcaption>UWillDiscover 2019 Conference, University of Windsor</figcaption>
+</figure>
 
 **UWillDiscover 2019 Conference Presentation**
 

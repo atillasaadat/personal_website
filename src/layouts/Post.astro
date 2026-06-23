@@ -89,6 +89,9 @@ const breadcrumbLd = {
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
   }
 
+  // Track gallery auto-advance timers so client-side navigation can clear them.
+  const activeTimers = new Set<number>();
+
   function isImageParagraph(el: Element): el is HTMLParagraphElement {
     return (
       el.tagName === 'P' &&
@@ -115,13 +118,33 @@ const breadcrumbLd = {
           )
           .join('')}
       </div>
-      <p class="gallery-count"><span class="gi">1</span> / ${imgs.length}</p>`;
+      <div class="gallery-controls">
+        <button class="gallery-toggle" type="button" aria-label="Pause slideshow">
+          <svg class="gallery-ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="16" pathLength="100"/></svg>
+          <svg class="ico ico-pause" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/></svg>
+          <svg class="ico ico-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"/></svg>
+        </button>
+        <p class="gallery-count"><span class="gi">1</span> / ${imgs.length}</p>
+      </div>`;
 
     const mainImg = g.querySelector('.gallery-img') as HTMLImageElement;
     const cap = g.querySelector('.gallery-caption') as HTMLElement;
     const counter = g.querySelector('.gi') as HTMLElement;
+    const toggle = g.querySelector('.gallery-toggle') as HTMLButtonElement;
+    const strip = g.querySelector('.gallery-thumbs') as HTMLElement;
     const thumbs = Array.from(g.querySelectorAll('.gallery-thumb')) as HTMLButtonElement[];
     let cur = 0;
+    let timer: number | null = null;
+
+    // Center the active thumbnail by scrolling only the strip, never the page
+    // (scrollIntoView would also scroll the document and disrupt the reader).
+    function centerThumb() {
+      const t = thumbs[cur];
+      const sRect = strip.getBoundingClientRect();
+      const tRect = t.getBoundingClientRect();
+      const delta = tRect.left + tRect.width / 2 - (sRect.left + sRect.width / 2);
+      strip.scrollBy({ left: delta, behavior: 'smooth' });
+    }
 
     function show(k: number) {
       cur = (k + imgs.length) % imgs.length;
@@ -130,14 +153,34 @@ const breadcrumbLd = {
       cap.textContent = imgs[cur].alt;
       counter.textContent = String(cur + 1);
       thumbs.forEach((t, ti) => t.classList.toggle('active', ti === cur));
-      thumbs[cur].scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+      centerThumb();
     }
 
-    thumbs.forEach((t) => t.addEventListener('click', () => show(Number(t.dataset.i))));
+    // Auto-advance every 4s, looping. Plays by default.
+    function startAuto() {
+      if (timer !== null || imgs.length < 2) return;
+      g.classList.add('playing');
+      toggle.setAttribute('aria-label', 'Pause slideshow');
+      timer = window.setInterval(() => show(cur + 1), 4000);
+      activeTimers.add(timer);
+    }
+    function stopAuto() {
+      g.classList.remove('playing');
+      toggle.setAttribute('aria-label', 'Play slideshow');
+      if (timer !== null) { clearInterval(timer); activeTimers.delete(timer); timer = null; }
+    }
+    // Manually choosing an image stops the slideshow until the user presses play.
+    function manualShow(k: number) { stopAuto(); show(k); }
+
+    thumbs.forEach((t) => t.addEventListener('click', () => manualShow(Number(t.dataset.i))));
+    toggle.addEventListener('click', () => (timer !== null ? stopAuto() : startAuto()));
     g.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft') { show(cur - 1); e.preventDefault(); }
-      else if (e.key === 'ArrowRight') { show(cur + 1); e.preventDefault(); }
+      if (e.key === 'ArrowLeft') { manualShow(cur - 1); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { manualShow(cur + 1); e.preventDefault(); }
     });
+
+    // Respect users who prefer reduced motion: start paused for them.
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) startAuto();
     return g;
   }
 
@@ -263,6 +306,12 @@ const breadcrumbLd = {
     buildGalleries();
     buildFigures();
     centerMediaCaptions();
+  });
+
+  // Clear any running slideshow timers before the DOM is swapped on navigation.
+  document.addEventListener('astro:before-swap', () => {
+    activeTimers.forEach((id) => clearInterval(id));
+    activeTimers.clear();
   });
 </script>
 
