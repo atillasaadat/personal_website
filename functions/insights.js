@@ -51,17 +51,73 @@ const ORG_TYPE_LABEL = {
   unknown: 'Unknown',
 };
 
-function startOfTodayUTC() {
-  const n = new Date();
-  return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate());
+// --- Timezone handling -----------------------------------------------------
+// Visit timestamps are stored and queried in UTC, but the dashboard shows date
+// ranges/labels in the viewer's own timezone (sent as a `tz` cookie by the
+// client). Cloudflare Workers ship full ICU, so Intl with `timeZone` works.
+
+// Validate an IANA timezone name; return it if usable, else null.
+function validTz(tz) {
+  if (!tz || typeof tz !== 'string') return null;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return tz;
+  } catch (e) {
+    return null;
+  }
 }
 
-function rangeBounds(key) {
+// Read a named cookie from the request.
+function cookieVal(request, name) {
+  const m = (request.headers.get('Cookie') || '').match(
+    new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'),
+  );
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
+// Wall-clock calendar parts of a UTC instant as seen in `tz`.
+function tzParts(utcMs, tz) {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  });
+  const p = {};
+  for (const part of dtf.formatToParts(utcMs)) p[part.type] = part.value;
+  return { y: +p.year, m: +p.month, d: +p.day, hh: p.hour === '24' ? 0 : +p.hour, mm: +p.minute, ss: +p.second };
+}
+
+// Offset (ms) of `tz` at an instant: the wall clock read as UTC minus actual UTC.
+function tzOffsetMs(utcMs, tz) {
+  const p = tzParts(utcMs, tz);
+  return Date.UTC(p.y, p.m - 1, p.d, p.hh, p.mm, p.ss) - utcMs;
+}
+
+// UTC timestamp of local midnight of calendar date y-m-d in `tz`. Two-pass to
+// resolve DST; midnight almost never lands on a transition, so this is exact.
+function zonedMidnightToUtc(y, m, d, tz) {
+  const guess = Date.UTC(y, m - 1, d);
+  let utc = guess - tzOffsetMs(guess, tz);
+  const refined = guess - tzOffsetMs(utc, tz);
+  if (refined !== utc) utc = refined;
+  return utc;
+}
+
+// Start of "today" (local midnight in tz) as a UTC timestamp.
+function startOfToday(tz) {
+  const p = tzParts(Date.now(), tz);
+  return zonedMidnightToUtc(p.y, p.m, p.d, tz);
+}
+
+function rangeBounds(key, tz) {
   const now = Date.now();
-  const sot = startOfTodayUTC();
+  const sot = startOfToday(tz);
   switch (key) {
     case 'today': return [sot, now];
-    case 'yesterday': return [sot - DAY, sot];
+    case 'yesterday': {
+      const y = tzParts(sot - DAY / 2, tz); // safely inside yesterday
+      return [zonedMidnightToUtc(y.y, y.m, y.d, tz), sot];
+    }
     case '7d': return [now - 7 * DAY, now];
     case '30d': return [now - 30 * DAY, now];
     case '1y': return [now - 365 * DAY, now];
@@ -69,15 +125,24 @@ function rangeBounds(key) {
   }
 }
 
-// Parse a YYYY-MM-DD string to a UTC midnight timestamp, or null.
-function parseDay(s) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s || '')) return null;
-  const t = Date.parse(s + 'T00:00:00Z');
-  return Number.isFinite(t) ? t : null;
+// Parse a YYYY-MM-DD string to the UTC timestamp of local midnight in `tz`, or null.
+function parseDay(s, tz) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+  if (!m) return null;
+  return zonedMidnightToUtc(+m[1], +m[2], +m[3], tz);
 }
 
-function ymd(ts) {
-  return new Date(ts).toISOString().slice(0, 10);
+// Format a UTC timestamp as YYYY-MM-DD as seen in `tz`.
+function ymd(ts, tz) {
+  const p = tzParts(ts, tz);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${p.y}-${pad(p.m)}-${pad(p.d)}`;
+}
+
+// Start of the calendar day AFTER a local midnight (its exclusive range end).
+function nextZonedMidnight(midnightUtc, tz) {
+  const p = tzParts(midnightUtc + Math.round(DAY * 1.5), tz);
+  return zonedMidnightToUtc(p.y, p.m, p.d, tz);
 }
 
 function esc(v) {
@@ -86,8 +151,8 @@ function esc(v) {
   );
 }
 
-function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities, orgs, refs, sources }) {
-  const today = ymd(Date.now());
+function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources }) {
+  const today = ymd(Date.now(), tz);
 
   const tabs = RANGES.map(
     ([key, lbl]) =>
@@ -186,6 +251,22 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8" />
+<script>
+  // Tell the server this browser's timezone via a cookie, so date ranges/labels
+  // render in local time. Runs before the body paints; reloads once on first
+  // visit (or when the zone changes) so the server can re-render. The reload is
+  // guarded on the cookie actually sticking, so blocked cookies can't loop.
+  (function () {
+    try {
+      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (!tz) return;
+      var m = document.cookie.match(/(?:^|;\\s*)tz=([^;]+)/);
+      if (m && decodeURIComponent(m[1]) === tz) return;
+      document.cookie = 'tz=' + encodeURIComponent(tz) + '; Path=/insights; Max-Age=31536000; SameSite=Strict; Secure';
+      if (/(?:^|;\\s*)tz=/.test(document.cookie)) location.reload();
+    } catch (e) {}
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
 <title>Insights &middot; atillasaadat.com</title>
@@ -282,7 +363,7 @@ function page({ range, fromStr, toStr, label, totals, geo, topPages, countries, 
 </style>
 </head><body><div class="wrap">
   <h1>Visitor Insights</h1>
-  <p class="sub">atillasaadat.com &middot; ${esc(label)} &middot; times in UTC</p>
+  <p class="sub">atillasaadat.com &middot; ${esc(label)} &middot; times in ${esc(tz)}</p>
   <div class="controls">
     <div class="tabs">${tabs}</div>
     <button type="button" class="refresh" id="refresh-btn" title="Reload the data without refreshing the whole page"><span class="ic">&#x21bb;</span> Refresh</button>
@@ -696,24 +777,29 @@ export async function onRequestGet({ request, env }) {
 
   const url = new URL(request.url);
 
+  // Viewer's timezone (from the `tz` cookie the client sets, or a ?tz= override);
+  // ranges and labels are computed in it. Defaults to UTC.
+  const tz = validTz(url.searchParams.get('tz')) || validTz(cookieVal(request, 'tz')) || 'UTC';
+
   // Custom date range takes precedence when both from & to are valid.
-  const fromTs = parseDay(url.searchParams.get('from'));
-  const toTs = parseDay(url.searchParams.get('to'));
+  const fromTs = parseDay(url.searchParams.get('from'), tz);
+  const toTs = parseDay(url.searchParams.get('to'), tz);
   let range, start, end, label, fromStr, toStr;
 
   if (fromTs !== null && toTs !== null) {
     range = null; // no preset highlighted
     start = Math.min(fromTs, toTs);
-    end = Math.max(fromTs, toTs) + DAY; // include the whole "to" day
-    fromStr = ymd(start);
-    toStr = ymd(end - DAY);
+    const lastDay = Math.max(fromTs, toTs);
+    end = nextZonedMidnight(lastDay, tz); // exclusive: start of the day after "to"
+    fromStr = ymd(start, tz);
+    toStr = ymd(lastDay, tz);
     label = fromStr === toStr ? fromStr : `${fromStr} to ${toStr}`;
   } else {
     range = url.searchParams.get('range') || DEFAULT_RANGE;
     if (!RANGES.some(([k]) => k === range)) range = DEFAULT_RANGE;
-    [start, end] = rangeBounds(range);
-    fromStr = start === 0 ? '' : ymd(start);
-    toStr = ymd(end - 1);
+    [start, end] = rangeBounds(range, tz);
+    fromStr = start === 0 ? '' : ymd(start, tz);
+    toStr = ymd(end - 1, tz);
     label = (RANGES.find(([k]) => k === range) || [, ''])[1];
   }
 
@@ -721,7 +807,7 @@ export async function onRequestGet({ request, env }) {
   const empty = { visitors: 0, views: 0, pages: 0, countries: 0 };
   const render = (totals, geo, topPages, countries, regions, cities, orgs, refs, sources) =>
     new Response(
-      page({ range, fromStr, toStr, label, totals, geo, topPages, countries, regions, cities, orgs, refs, sources }),
+      page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources }),
       { headers: { ...SECURITY_HEADERS, 'Content-Type': 'text/html; charset=utf-8' } },
     );
 
