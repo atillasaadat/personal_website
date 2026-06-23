@@ -4,6 +4,7 @@ description: "GNC Engineer for the Droid.001 and Droid.002 satellite missions: a
 date: 2024-09-21
 cover: "/media/covers/gnc-engineer-turion-space.mp4"
 tags: ["GNC", "Mission Ops", "Satellites"]
+highlight: "20,000+ on-orbit images captured with the autonomous mission planning tool I built"
 ---
 
 At Turion Space, we’re pushing the boundaries of space technology, particularly with our work on space situational awareness and orbital debris mitigation. As a Guidance, Navigation, and Control (GNC) Engineer, I've developed the GNC systems and ensured the operational success of our first satellite **Droid.001**, and the in-development **Droid.002** (launching Q1 2025). This post provides a brief look at my contributions to spacecraft missions, focusing on significant moments, launch experiences, and my role in pushing the boundaries of space exploration.
