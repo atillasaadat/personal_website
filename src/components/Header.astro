@@ -2,6 +2,8 @@
 const links = [
   { href: '/', label: 'Home' },
   { href: '/#projects', label: 'Projects' },
+  { href: '/research', label: 'Research' },
+  { href: '/about', label: 'About' },
   { href: '/#satmap', label: 'Globe' },
   { href: '/#awards', label: 'Awards' },
   { href: '/cv', label: 'CV' },
@@ -58,7 +60,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   .brand-mark { font-size: 1.1rem; line-height: 1; }
   ul {
     display: flex;
-    gap: 1.8rem;
+    gap: 1.25rem;
     list-style: none;
     margin: 0;
     padding: 0;
@@ -104,7 +106,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
       overflow: hidden;
       transition: max-height 0.25s ease;
     }
-    ul.open { max-height: 320px; }
+    ul.open { max-height: 480px; }
     ul li { border-top: 1px solid var(--line); }
     ul a { display: block; padding: 1rem 1.25rem; }
     #nav-toggle[aria-expanded='true'] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }

@@ -1,0 +1,391 @@
+---
+import Base from '../layouts/Base.astro';
+
+// Bold my own name wherever it appears in an author/inventor list.
+const me = (s: string) => s.replace(/(Saadat,?\s*A\.?)/g, '<b>$1</b>');
+
+const profiles = [
+  { label: 'ORCID', id: '0000-0001-9375-970X', href: 'https://orcid.org/0000-0001-9375-970X' },
+  { label: 'Google Scholar', id: 'Profile', href: 'https://scholar.google.com/citations?user=LDy19UwAAAAJ&hl=en' },
+  { label: 'ResearchGate', id: 'Profile', href: 'https://www.researchgate.net/profile/Atilla_Saadat' },
+];
+
+const interests = [
+  'Spacecraft GNC',
+  'Attitude Determination & Control (ADCS)',
+  'State Estimation',
+  'Numerical & Trajectory Optimization',
+  'Orbit Determination',
+  'Autonomous Mission Planning',
+  'Embedded Spacecraft Systems',
+  'CubeSats & Distributed Space Systems',
+  'Robotics',
+  'Machine Learning for Aerospace',
+];
+
+const positions = [
+  {
+    role: 'Graduate Researcher',
+    org: 'UTIAS Space Flight Laboratory, University of Toronto',
+    period: 'Sep 2020 - Sep 2022',
+    advisor: 'Dr. Robert E. Zee',
+    points: [
+      'Automated ADCS hardware testing (rate sensors, magnetometers, magnetorquers, fine sun sensors, reaction wheels) across 16 satellites in the HawkEye 360 constellation, cutting test time by 63% through Python tooling and repeatable verification methods.',
+      'Developed a novel Earth horizon sensor from a repurposed spacecraft inspection camera, achieving 1 degree RMSE nadir-vector estimation and validating against STK EOIR simulation and on-orbit NorSat-2 imagery.',
+      'Created an in-situ on-orbit inertia tensor estimation method, validated in MATLAB/Simulink and implemented as reaction-wheel attitude commands in C++ flight code for the HawkEye 360 mission.',
+      'Built a model-based solar power generation analysis tool in Python and STK for NASA MSFC StarBurst, modeling photovoltaic self-shadowing across 135+ attitude and orbital cases.',
+    ],
+  },
+  {
+    role: 'Undergraduate Researcher',
+    org: 'Intelligent Control, Analysis & Modeling (iCAM) Laboratory, University of Windsor',
+    period: 'Mar 2019 - Oct 2020',
+    advisor: 'Dr. Afshin Rahimi',
+    points: [
+      'Developed a novel ensemble machine learning algorithm for fault detection and isolation in satellite reaction wheels using scikit-learn, TensorFlow, and Keras.',
+      'Researched time-series feature extraction, establishing dataset-generation best practices for ML-based fault diagnosis of spacecraft systems.',
+      'Co-authored peer-reviewed papers and conference presentations on intelligent control and fault diagnosis for spacecraft.',
+    ],
+  },
+];
+
+const thesis = [
+  {
+    authors: 'Saadat, A.',
+    year: '2022',
+    title: 'Design and Test Optimizations for Spacecraft Attitude Determination and Control Subsystems',
+    venue: 'M.A.Sc. Thesis, University of Toronto Institute for Aerospace Studies, Space Flight Laboratory',
+    links: [{ label: 'DOI', href: 'https://doi.org/10.1807/125667' }],
+  },
+];
+
+const journals = [
+  {
+    authors: 'Rahimi, A., & Saadat, A.',
+    year: '2020',
+    title: 'Fault isolation of reaction wheels onboard three-axis controlled in-orbit satellite using ensemble machine learning',
+    venue: 'Aerospace Systems, 3(2), 119-126',
+    links: [{ label: 'DOI', href: 'https://doi.org/10.1007/s42401-020-00046-x' }],
+    post: '/post/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques',
+  },
+];
+
+const conferences = [
+  {
+    authors: 'Saadat, A., Bhosale, V., Bhardwaj, K., & Gavrilovska, A.',
+    year: '2027',
+    title: 'An Adaptive Telemetry Probe for Resource-Constrained Spacecraft Using F Prime',
+    venue: 'AIAA SciTech Forum 2027, Orlando, FL',
+    note: 'Submitted',
+    post: '/post/adaptive-telemetry-probe-for-resource-constrained-spacecraft-using-f-prime',
+  },
+  {
+    authors: 'Saadat, A., Chen, V., & Austin, J.',
+    year: '2025',
+    title: 'End-to-End Autonomous Mission Planning and Spacecraft Attitude Optimization for Resident Space Object Imaging',
+    venue: 'Advanced Maui Optical and Space Surveillance Technologies (AMOS) Conference 2025, Maui, HI',
+    post: '/post/gnc-engineer-turion-space',
+  },
+  {
+    authors: 'Saadat, A.',
+    year: '2022',
+    title: 'Attitude Determination with Self-Inspection Cameras Repurposed as Earth Horizon Sensors',
+    venue: 'Frank J. Redd Student Competition, Small Satellite Conference 2022, Utah State University',
+    award: '1st Place Paper & Presentation',
+    links: [{ label: 'Paper', href: 'https://digitalcommons.usu.edu/smallsat/2022/all2022/3/' }],
+    post: '/post/masc-thesis-ch-3-earth-horizon-sensor-development',
+  },
+  {
+    authors: 'Saadat, A.',
+    year: '2022',
+    title: 'On-Orbit Spacecraft Inertia Tensor Estimation',
+    venue: 'International Astronautical Congress (IAC) 2022, Paris, France',
+    note: 'CSA Canadian delegate selection',
+    post: '/post/masc-thesis-ch-2-on-orbit-spacecraft-inertia-tensor-estimation',
+  },
+  {
+    authors: 'Folami, F. O., Rahimi, A., & Saadat, A.',
+    year: '2020',
+    title: 'Fault Isolation of Reaction Wheels On-board 3-Axis Controlled In-Orbit Satellite Using Machine Learning Techniques',
+    venue: 'IAC-20.B4.9-GTS.5.10, International Astronautical Congress 2020, Dubai (Online), UAE',
+    post: '/post/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques',
+  },
+  {
+    authors: 'Rahimi, A., & Saadat, A.',
+    year: '2019',
+    title: 'Fault isolation of reaction wheels on-board 3-axis controlled in-orbit satellite using ensemble machine learning techniques',
+    venue: 'International Conference on Aerospace System Science and Engineering (ICASSE), Toronto, ON',
+    post: '/post/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques',
+  },
+];
+
+const techReports = [
+  {
+    authors: 'Saadat, A., Weeratunga, M., Hasan, M., & Mehroke, A.',
+    year: '2025',
+    title: 'Reconstructing ESA Time-Series Trojans via Fourier-Regularized Deep Learning',
+    venue: 'Technical Report, CS-7643 Deep Learning, Georgia Institute of Technology',
+    links: [{ label: 'DOI', href: 'https://doi.org/10.13140/RG.2.2.17228.68480' }],
+  },
+  {
+    authors: 'Saadat, A.',
+    year: '2025',
+    title: 'Real-Time Thermospheric Density Forecasting with a Metric-Aligned BiGRU-Attention Network for Space Situational Awareness',
+    venue: 'Technical Report, MIT ARCLab STORM-AI Competition',
+    links: [
+      { label: 'PDF', href: '/files/MIT_ARCLab_STORM_AI_Model_Description.pdf' },
+      { label: 'Paper', href: 'https://www.researchgate.net/publication/393786213_Real-Time_Thermospheric_Density_Forecasting_with_a_Metric-Aligned_BiGRU-Attention_Network' },
+    ],
+    post: '/post/mit-storm-ai-challenge',
+  },
+];
+
+const patents = [
+  {
+    authors: 'Saadat, A., & Usui, K.',
+    year: '2020',
+    title: 'Method and Computing System for Estimating Parameter for Robot Operation',
+    note: 'USA (Active) · Japan (Active) · China (Pending)',
+  },
+  {
+    authors: 'Saadat, A., & Usui, K.',
+    year: '2020',
+    title: 'Method and Computing System for Determining a Value of an Error Parameter Indicative of Quality of Robot Calibration',
+    note: 'USA (Active) · Japan (Active) · China (Pending)',
+  },
+];
+
+const posters = [
+  {
+    authors: 'Saadat, A., Chen, V., & Austin, J.',
+    year: '2025',
+    title: 'End-to-End Autonomous Mission Planning and Spacecraft Attitude Optimization for Resident Space Object Imaging',
+    venue: 'AMOS Conference 2025, Maui, HI',
+  },
+  {
+    authors: 'Saadat, A.',
+    year: '2019',
+    title: 'CryoRoute: Generating Globally-Optimized Naval Routes in the Arctic Ocean',
+    venue: 'UWillDiscover Conference, University of Windsor, ON',
+    post: '/post/cryoroute-globally-optimized-naval-routes-in-north-arctic-ocean',
+  },
+  {
+    authors: 'Saadat, A.',
+    year: '2019',
+    title: 'CryoRoute: Generating Globally-Optimized Naval Routes in the Arctic Ocean',
+    venue: 'ESA Atlantic from Space Workshop, National Oceanography Centre, Southampton, UK',
+    post: '/post/cryoroute-globally-optimized-naval-routes-in-north-arctic-ocean',
+  },
+];
+
+const service = [
+  'Judge, AIAA Region VI Student Conference (2025)',
+  'Programs Chair, AIAA Orange County Section (2024 to present)',
+];
+
+const sections = [
+  { id: 'thesis', label: 'Master’s Thesis', items: thesis, kind: 'pub' },
+  { id: 'journals', label: 'Peer-Reviewed Journal Articles', items: journals, kind: 'pub' },
+  { id: 'conferences', label: 'Conference Proceedings & Presentations', items: conferences, kind: 'pub' },
+  { id: 'reports', label: 'Technical Reports', items: techReports, kind: 'pub' },
+  { id: 'patents', label: 'Patents', items: patents, kind: 'patent' },
+  { id: 'posters', label: 'Poster Presentations', items: posters, kind: 'pub' },
+] as const;
+---
+<Base
+  title="Research & Publications | Atilla Saadat"
+  description="Peer-reviewed articles, conference papers, technical reports, patents, and research positions of Atilla Saadat in spacecraft GNC, ADCS, and machine learning."
+>
+  <section class="container section">
+    <div class="section-head">
+      <p class="kicker">// RESEARCH</p>
+      <h2>Research &amp; Publications</h2>
+      <p class="intro">
+        Spacecraft guidance, navigation, and control engineer with research spanning attitude
+        determination and control, state estimation, autonomous mission planning, and machine
+        learning for aerospace. Below is a complete record of my publications, patents, and research
+        positions.
+      </p>
+      <ul class="profiles">
+        {profiles.map((p) => (
+          <li>
+            <a class="profile" href={p.href} target="_blank" rel="noopener">
+              <span class="p-label">{p.label}</span>
+              <span class="p-id">{p.id}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    <h3 class="block-head">Research Interests</h3>
+    <ul class="chips">
+      {interests.map((i) => <li class="chip">{i}</li>)}
+    </ul>
+
+    <h3 class="block-head">Research Positions</h3>
+    <div class="positions">
+      {positions.map((p) => (
+        <article class="position hud-card">
+          <div class="pos-head">
+            <h4>{p.role}</h4>
+            <span class="pos-period mono">{p.period}</span>
+          </div>
+          <p class="pos-org">{p.org}</p>
+          <p class="pos-advisor mono">Advisor: {p.advisor}</p>
+          <ul class="pos-points">
+            {p.points.map((pt) => <li>{pt}</li>)}
+          </ul>
+        </article>
+      ))}
+    </div>
+
+    {sections.map((sec) => (
+      <section class="pub-block">
+        <h3 class="block-head">{sec.label}</h3>
+        <ol class="cites">
+          {sec.items.map((c: any) => (
+            <li class="cite">
+              <p class="cite-line">
+                <span set:html={me(c.authors)} />
+                {' '}({c.year}).{' '}
+                <span class="cite-title">{c.title}.</span>
+                {c.venue && <> <span class="cite-venue">{c.venue}.</span></>}
+              </p>
+              <p class="cite-meta">
+                {c.award && <span class="badge badge-award">★ {c.award}</span>}
+                {c.note && <span class="badge">{c.note}</span>}
+                {c.links && c.links.map((l: any) => (
+                  <a class="cite-link" href={l.href} target="_blank" rel="noopener">{l.label} ↗</a>
+                ))}
+                {c.post && <a class="cite-link cite-post" href={c.post}>Related project →</a>}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
+
+    <section class="pub-block">
+      <h3 class="block-head">Academic Service</h3>
+      <ul class="service">
+        {service.map((s) => <li>{s}</li>)}
+      </ul>
+    </section>
+  </section>
+</Base>
+
+<style>
+  .intro { color: var(--text-1); max-width: 70ch; font-size: 1.05rem; }
+
+  .profiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 0;
+  }
+  .profile {
+    display: inline-flex;
+    flex-direction: column;
+    padding: 0.5rem 0.95rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    color: var(--text-0);
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  .profile:hover { text-decoration: none; border-color: var(--accent); color: var(--accent); }
+  .p-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .p-id { font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-1); }
+  .profile:hover .p-id { color: var(--accent); }
+
+  .block-head {
+    font-size: 1.3rem;
+    margin: 2.75rem 0 1.1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.55rem; list-style: none; padding: 0; margin: 0; }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--text-1);
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--bg-1);
+  }
+
+  .positions { display: grid; gap: 1.2rem; }
+  .position { padding: 1.3rem 1.5rem; }
+  .pos-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .pos-head h4 { margin: 0; font-size: 1.12rem; }
+  .pos-period { font-size: 0.78rem; color: var(--text-2); white-space: nowrap; }
+  .pos-org { margin: 0.2rem 0 0.15rem; color: var(--text-1); }
+  .pos-advisor { font-size: 0.78rem; color: var(--accent-2); margin: 0 0 0.7rem; }
+  .pos-points { margin: 0; padding-left: 1.1rem; }
+  .pos-points li { color: var(--text-1); font-size: 0.92rem; margin-bottom: 0.4rem; }
+
+  .cites { margin: 0; padding: 0; list-style: none; counter-reset: cite; }
+  .cite {
+    position: relative;
+    padding: 0 0 1.1rem 2.2rem;
+    margin-bottom: 1.1rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .cite:last-child { border-bottom: 0; margin-bottom: 0; }
+  .cite::before {
+    counter-increment: cite;
+    content: counter(cite);
+    position: absolute;
+    left: 0;
+    top: 0.05rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent);
+  }
+  .cite-line { margin: 0; color: var(--text-1); line-height: 1.6; }
+  .cite-line :global(b) { color: var(--text-0); }
+  .cite-title { color: var(--text-0); }
+  .cite-venue { color: var(--text-1); font-style: italic; }
+  .cite-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin: 0.5rem 0 0;
+  }
+  .cite-meta:empty { display: none; }
+  .cite-link {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+  }
+  .cite-post { color: var(--accent-2); }
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    color: var(--text-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+  }
+  .badge-award { color: var(--warn); border-color: rgba(251, 191, 36, 0.4); }
+
+  .service { margin: 0; padding-left: 1.1rem; }
+  .service li { color: var(--text-1); margin-bottom: 0.4rem; }
+</style>

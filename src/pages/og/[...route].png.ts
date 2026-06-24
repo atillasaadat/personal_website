@@ -29,6 +29,20 @@ export const getStaticPaths: GetStaticPaths = async () => {
       summary:
         'Spacecraft GNC Engineer II at Varda Space Industries. Experience, education, publications, and awards.',
     },
+    {
+      route: 'research',
+      kicker: 'Research',
+      title: 'Research & Publications',
+      summary:
+        'Peer-reviewed articles, conference papers, technical reports, patents, and research positions in spacecraft GNC, ADCS, and machine learning.',
+    },
+    {
+      route: 'about',
+      kicker: 'About',
+      title: 'About Atilla Saadat',
+      summary:
+        'Spacecraft GNC engineer, founder of WinSAT, NREMT EMT, and PADI Rescue Diver. Background, skills, experience, and life outside the lab.',
+    },
   ];
 
   const posts = await getCollection('posts');

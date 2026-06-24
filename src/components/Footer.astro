@@ -1,11 +1,25 @@
 ---
 import Socials from './Socials.astro';
 const year = new Date().getFullYear();
+const email = 'contact@atillasaadat.com';
+const cvPath = '/files/Atilla_Saadat_CV.pdf';
 ---
 <footer id="contact">
   <div class="container">
     <p class="kicker">// CONTACT</p>
     <h2>Get in touch</h2>
+    <p class="blurb">
+      Open to conversations about spacecraft GNC, research collaborations, and PhD opportunities.
+      The fastest way to reach me is email.
+    </p>
+    <div class="cta">
+      <a class="btn btn-primary" href={`mailto:${email}`}>Email me ↗</a>
+      <a class="btn" href={cvPath} download>Download CV ↓</a>
+    </div>
+    <p class="email-line">
+      <span class="mono dim">EMAIL</span>
+      <a href={`mailto:${email}`}>{email}</a>
+    </p>
     <Socials />
     <p class="fineprint">© {year} Atilla Saadat</p>
   </div>
@@ -19,13 +33,52 @@ const year = new Date().getFullYear();
     background: rgba(10, 16, 30, 0.5);
   }
   h2 {
-    margin: 0.4rem 0 1.5rem;
+    margin: 0.4rem 0 0.75rem;
     font-size: 1.5rem;
   }
+  .blurb {
+    margin: 0 0 1.5rem;
+    color: var(--text-1);
+    max-width: 52ch;
+  }
+  .cta {
+    display: flex;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.4rem;
+  }
+  .btn {
+    display: inline-block;
+    padding: 0.7rem 1.5rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-0);
+    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+  }
+  .btn:hover { text-decoration: none; border-color: var(--accent); color: var(--accent); }
+  .btn-primary {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-primary:hover { background: rgba(94, 234, 212, 0.25); }
+  .email-line {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    margin: 0 0 1.75rem;
+    flex-wrap: wrap;
+  }
+  .email-line a { font-family: var(--font-mono); font-size: 0.92rem; }
   .fineprint {
     margin-top: 2.5rem;
     color: var(--text-2);
     font-size: 0.85rem;
   }
-  .mono { font-family: var(--font-mono); font-size: 0.78rem; }
+  .mono { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--text-1); }
+  .dim { color: var(--text-2); }
 </style>

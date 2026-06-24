@@ -44,6 +44,8 @@ const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
 let ogRoute = 'index';
 if (path === '/projects') ogRoute = 'projects';
 else if (path === '/cv') ogRoute = 'cv';
+else if (path === '/research') ogRoute = 'research';
+else if (path === '/about') ogRoute = 'about';
 else if (path.startsWith('/post/')) ogRoute = 'post/' + path.slice('/post/'.length);
 const ogImage = new URL(`/og/${ogRoute}.png`, Astro.site);
 
@@ -54,6 +56,8 @@ const sameAs = [
   'https://twitter.com/atillasaadat',
   'https://devpost.com/atillasaadat',
   'https://www.researchgate.net/profile/Atilla_Saadat',
+  'https://scholar.google.com/citations?user=LDy19UwAAAAJ&hl=en',
+  'https://orcid.org/0000-0001-9375-970X',
 ];
 
 // Sitewide structured data: the Person (knowledge-graph entity) and the

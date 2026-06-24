@@ -5,6 +5,8 @@ import type { Page } from '@playwright/test';
 export const PAGES = [
   { path: '/', name: 'home' },
   { path: '/cv', name: 'cv' },
+  { path: '/research', name: 'research' },
+  { path: '/about', name: 'about' },
   { path: '/post/gnc-engineer-varda-space', name: 'post-varda' },
   { path: '/post/masc-thesis-ch-1-adcs-testing-optimizations', name: 'post-gallery' },
   { path: '/post/mit-storm-ai-challenge', name: 'post-tables' },

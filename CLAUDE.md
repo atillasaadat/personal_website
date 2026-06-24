@@ -57,8 +57,12 @@ site_files/           # ARCHIVE: raw Wix media export, reference only, not deplo
 |---|---|
 | `/` | Hero/about (GNC Engineer II @ Varda), specialties, projects grid (`#projects`, the full post list), live 3D satellite map (Cesium globe), awards (`#awards`), contact/social. The nav "Projects" and "Awards" links scroll to these sections rather than separate pages. |
 | `/projects` | Redirects to `/#projects` (the homepage section). Kept only so old/bookmarked links don't 404. |
+| `/research` | PhD-style research record: interests, research positions (with advisors), and publications grouped by type (thesis, journal, conference, technical reports, patents, posters) plus academic service. Data-driven from arrays in `research.astro`; entries cross-link to related on-site posts and to ORCID/Google Scholar/ResearchGate. |
+| `/about` | Personal bio, photo gallery (vanilla-JS lightbox, images in `public/media/about-me/`), skills matrix, experience/education timeline, and certifications/affiliations (EMT, PADI Rescue Diver, Civil Air Patrol, AIAA). |
 | `/post/<slug>` | Individual project/blog post, **slugs must match the old Wix URLs** to preserve inbound links |
 | `/cv` | Embedded + downloadable CV PDF |
+
+Contact: primary email is `contact@atillasaadat.com` (mailto CTA + Download CV button live in the sitewide `Footer.astro`). New page routes must be added to: the `Header.astro` nav, the OG card list in `src/pages/og/[...route].png.ts` + the `ogRoute` map in `Base.astro`, and the `PAGES` list in `tests/_helpers.ts`.
 
 Social: [LinkedIn](https://linkedin.com/in/atillasaadat), [GitHub](https://github.com/atillasaadat), [Twitter](https://twitter.com/atillasaadat), [Devpost](https://devpost.com/atillasaadat), [ResearchGate](https://www.researchgate.net/profile/Atilla_Saadat).
 
