@@ -151,19 +151,20 @@ function esc(v) {
   );
 }
 
-// ISO-2 country code -> flag emoji (the two regional-indicator letters).
-// Returns '' for anything that isn't exactly two ASCII letters.
-function flagEmoji(cc) {
-  const c = String(cc || '').trim().toUpperCase();
-  if (!/^[A-Z]{2}$/.test(c)) return '';
-  return String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65, 0x1f1e6 + c.charCodeAt(1) - 65);
-}
-
-// Display a country as "<flag> <code>" (e.g. "🇺🇸 US"); falls back to "?".
+// Display a country as "<flag image> <code>" (e.g. a US flag then "US").
+// Flag emoji are used instead of images on no platform here because Windows
+// browsers don't render flag emoji at all (they show the bare letters), so a
+// small PNG from flagcdn keeps it consistent everywhere. Falls back to just the
+// code (or "?") for anything that isn't a valid two-letter code.
 function countryLabel(cc) {
-  const code = esc(cc || '?');
-  const fl = flagEmoji(cc);
-  return fl ? `<span class="flag">${fl}</span> ${code}` : code;
+  const code = String(cc || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) return esc(cc || '?');
+  const lc = code.toLowerCase();
+  return (
+    `<img class="flag" src="https://flagcdn.com/20x15/${lc}.png" ` +
+    `srcset="https://flagcdn.com/40x30/${lc}.png 2x" width="20" height="15" ` +
+    `alt="" loading="lazy" decoding="async"> ${code}`
+  );
 }
 
 // Format a millisecond duration as a compact human string, or null if there's
@@ -336,7 +337,8 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
   .daterange button:hover { background:rgba(94,234,212,0.25); }
   .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:2rem; }
   .card { background:rgba(16,26,46,0.6); border:1px solid rgba(126,168,255,0.16); border-radius:10px; padding:1.1rem 1.25rem; }
-  .flag { font-size:1.05em; vertical-align:-0.04em; }
+  .flag { width:20px; height:15px; vertical-align:-3px; margin-right:0.1rem;
+          border-radius:2px; box-shadow:0 0 0 1px rgba(126,168,255,0.18); }
   .card .n { font-size:1.7rem; font-weight:700; font-variant-numeric:tabular-nums; }
   .card .l { color:#aab8d4; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.07em; }
   h2 { font-size:1rem; margin:2rem 0 0.6rem; color:#aab8d4; }
