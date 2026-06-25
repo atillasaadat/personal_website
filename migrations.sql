@@ -21,6 +21,14 @@ CREATE INDEX IF NOT EXISTS idx_pageviews_org ON pageviews(org);
 ALTER TABLE pageviews ADD COLUMN source TEXT;
 CREATE INDEX IF NOT EXISTS idx_pageviews_source ON pageviews(source);
 
+-- Migration: add dwell-time tracking. `pvid` is a per-pageview id sent on load;
+-- `dur` is the active time on that page in ms, written by the sendBeacon POST
+-- when the visitor leaves. Apply before/with the track.js + Base.astro deploy
+-- (the insert names pvid). Re-runs error harmlessly if a column already exists.
+ALTER TABLE pageviews ADD COLUMN pvid TEXT;
+ALTER TABLE pageviews ADD COLUMN dur INTEGER;
+CREATE INDEX IF NOT EXISTS idx_pageviews_pvid ON pageviews(pvid);
+
 -- The site wasn't public before bot-filtering was added, so the pre-launch rows
 -- are all crawlers/scanners. To start clean, also run:
 --   npx wrangler d1 execute site-analytics --remote --command "DELETE FROM pageviews;"

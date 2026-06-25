@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS pageviews (
                               -- often the company or institution for corp/campus visits
   ref     TEXT,               -- external referrer hostname that sent the visitor
   source  TEXT,               -- ?source= tag from the landing link (e.g. "CV")
+  pvid    TEXT,               -- per-pageview id, links a view to its dwell report
+  dur     INTEGER,            -- active time on the page, ms (filled on page leave)
   vid     TEXT    NOT NULL    -- anonymous per-visitor id (cookie)
 );
 
@@ -27,3 +29,4 @@ CREATE INDEX IF NOT EXISTS idx_pageviews_ts     ON pageviews(ts);
 CREATE INDEX IF NOT EXISTS idx_pageviews_vid    ON pageviews(vid);
 CREATE INDEX IF NOT EXISTS idx_pageviews_org    ON pageviews(org);
 CREATE INDEX IF NOT EXISTS idx_pageviews_source ON pageviews(source);
+CREATE INDEX IF NOT EXISTS idx_pageviews_pvid   ON pageviews(pvid);

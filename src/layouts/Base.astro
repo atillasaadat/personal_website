@@ -184,14 +184,68 @@ const structuredData = {
             // can attribute the visit (e.g. the link in my CV: ?source=CV).
             var qs = new URLSearchParams(location.search);
             var src = (qs.get('source') || qs.get('utm_source') || '').slice(0, 64);
+            // Per-pageview id links this view to its later dwell-time report.
+            var pvid =
+              window.crypto && crypto.randomUUID
+                ? crypto.randomUUID()
+                : Date.now().toString(36) + Math.random().toString(36).slice(2);
+            startDwell(pvid);
             new Image().src =
               '/track?p=' + encodeURIComponent(location.pathname) +
               '&r=' + encodeURIComponent(document.referrer || '') +
               (src ? '&s=' + encodeURIComponent(src) : '') +
+              '&i=' + encodeURIComponent(pvid) +
               '&t=' + Date.now();
           }
         } catch (e) {}
       }
+
+      // --- Dwell-time tracking -------------------------------------------------
+      // Measures how long the visitor actively (tab visible) spends on each page
+      // and reports it to /track via sendBeacon, so the dashboard can show time
+      // on site and per page. The per-pageview id ties the duration back to the
+      // pageview row recorded on load. Cumulative totals are sent on tab-hide,
+      // navigation, and unload; the server keeps the largest value seen.
+      var dwell = null; // { pvid, active(ms), start(ts|null), sent(s) }
+
+      function startDwell(pvid) {
+        flushDwell(); // close out any previous page first
+        dwell = { pvid: pvid, active: 0, start: Date.now(), sent: -1 };
+      }
+      function accumulateDwell() {
+        if (dwell && dwell.start != null) {
+          dwell.active += Date.now() - dwell.start;
+          dwell.start = null;
+        }
+      }
+      function resumeDwell() {
+        if (dwell && dwell.start == null) dwell.start = Date.now();
+      }
+      function flushDwell() {
+        if (!dwell) return;
+        accumulateDwell();
+        var secs = Math.round(dwell.active / 1000);
+        if (secs > 0 && secs !== dwell.sent && navigator.sendBeacon) {
+          dwell.sent = secs;
+          try {
+            navigator.sendBeacon(
+              '/track?i=' + encodeURIComponent(dwell.pvid) + '&d=' + dwell.active,
+            );
+          } catch (e) {}
+        }
+        resumeDwell(); // keep counting if the visitor returns to the tab
+      }
+
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') flushDwell();
+        else resumeDwell();
+      });
+      window.addEventListener('pagehide', flushDwell);
+      // Client-side navigation: report the page being left, then stop counting it.
+      document.addEventListener('astro:before-swap', function () {
+        flushDwell();
+        dwell = null;
+      });
       document.addEventListener('astro:page-load', enhancePage);
     </script>
   </body>
