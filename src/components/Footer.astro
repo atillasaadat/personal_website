@@ -2,19 +2,14 @@
 import Socials from './Socials.astro';
 const year = new Date().getFullYear();
 const email = 'contact@atillasaadat.com';
-const cvPath = '/files/Atilla_Saadat_CV.pdf';
 ---
 <footer id="contact">
   <div class="container">
     <p class="kicker">// CONTACT</p>
     <h2>Get in touch</h2>
-    <p class="blurb">
-      Open to conversations about spacecraft GNC, research collaborations, and PhD opportunities.
-      The fastest way to reach me is email.
-    </p>
     <div class="cta">
       <a class="btn btn-primary" href={`mailto:${email}`}>Email me ↗</a>
-      <a class="btn" href={cvPath} download>Download CV ↓</a>
+      <a class="btn" href="/cv">View CV →</a>
     </div>
     <p class="email-line">
       <span class="mono dim">EMAIL</span>
@@ -30,16 +25,11 @@ const cvPath = '/files/Atilla_Saadat_CV.pdf';
     border-top: 1px solid var(--line);
     padding-block: 3.5rem;
     margin-top: 4rem;
-    background: rgba(10, 16, 30, 0.5);
+    background: var(--footer-bg);
   }
   h2 {
-    margin: 0.4rem 0 0.75rem;
+    margin: 0.4rem 0 1.5rem;
     font-size: 1.5rem;
-  }
-  .blurb {
-    margin: 0 0 1.5rem;
-    color: var(--text-1);
-    max-width: 52ch;
   }
   .cta {
     display: flex;

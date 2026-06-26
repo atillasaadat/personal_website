@@ -22,7 +22,7 @@ const poster = isVideo ? cover!.replace(/\.mp4$/, '-poster.jpg') : undefined;
   {cover && (
     <div class="cover">
       {isVideo ? (
-        <video autoplay muted loop playsinline preload="none" poster={poster} width="640" height="360">
+        <video muted loop playsinline preload="none" poster={poster} width="640" height="360" data-card-video>
           <source src={cover} type="video/mp4" />
         </video>
       ) : (
@@ -130,3 +130,28 @@ const poster = isVideo ? cover!.replace(/\.mp4$/, '-poster.jpg') : undefined;
     color: var(--accent);
   }
 </style>
+
+<script>
+  // Only play a card's video cover while it is on screen (and only load it
+  // then, since preload="none"). Avoids decoding several videos at once on the
+  // projects grid. Re-armed on every page view for client-side navigation.
+  function setupCardVideos() {
+    const vids = Array.from(document.querySelectorAll<HTMLVideoElement>('video[data-card-video]'));
+    (window as any).__cardVidIO?.disconnect?.();
+    if (!vids.length) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; // posters only
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const v = e.target as HTMLVideoElement;
+          if (e.isIntersecting) v.play().catch(() => {});
+          else v.pause();
+        }
+      },
+      { rootMargin: '150px 0px' },
+    );
+    vids.forEach((v) => io.observe(v));
+    (window as any).__cardVidIO = io;
+  }
+  document.addEventListener('astro:page-load', setupCardVideos);
+</script>

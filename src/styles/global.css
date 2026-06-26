@@ -2,10 +2,11 @@
    Design tokens, space / GNC telemetry theme
    ============================================================ */
 :root {
+  /* Dark, the default mission-control theme. */
   --bg-0: #05080f;
   --bg-1: #0a101e;
   --bg-2: #101a2e;
-  --surface: rgba(16, 26, 46, 0.6);
+  --surface: rgba(16, 26, 46, 0.82);
   --line: rgba(126, 168, 255, 0.16);
   --line-strong: rgba(126, 168, 255, 0.35);
 
@@ -18,6 +19,12 @@
   --accent-2: #7ea8ff;      /* orbit blue */
   --warn: #fbbf24;          /* award amber */
 
+  /* Semantic surfaces (translucent chrome that the theme retints). */
+  --header-bg: rgba(5, 8, 15, 0.92);
+  --footer-bg: rgba(10, 16, 30, 0.5);
+  --overlay-bg: rgba(3, 5, 10, 0.93);
+  --sky-glow: rgba(56, 89, 153, 0.22);
+
   --font-display: 'Sora', system-ui, sans-serif;
   --font-body: 'IBM Plex Sans Variable', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -25,6 +32,38 @@
   --radius: 10px;
   --max-w: 1080px;
   --header-h: 64px;
+
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------
+   Light theme, a daylit version of the same cool, technical
+   palette (blue-tinted neutrals, darker teal/blue/amber so text
+   and accents keep WCAG AA contrast on a light surface).
+   ------------------------------------------------------------ */
+:root[data-theme='light'] {
+  --bg-0: #eef2f9;
+  --bg-1: #e3e9f4;
+  --bg-2: #d7e0ee;
+  --surface: rgba(255, 255, 255, 0.85);
+  --line: rgba(30, 58, 110, 0.18);
+  --line-strong: rgba(30, 58, 110, 0.4);
+
+  --text-0: #0a1733;
+  --text-1: #2f3e60;
+  --text-2: #4a5878;
+
+  --accent: #0f766e;        /* darker telemetry teal for contrast */
+  --accent-dim: rgba(15, 118, 110, 0.13);
+  --accent-2: #1d4ed8;      /* orbit blue */
+  --warn: #b45309;          /* award amber */
+
+  --header-bg: rgba(238, 242, 249, 0.93);
+  --footer-bg: rgba(226, 233, 244, 0.62);
+  --overlay-bg: rgba(210, 221, 238, 0.92);
+  --sky-glow: rgba(120, 150, 210, 0.18);
+
+  color-scheme: light;
 }
 
 /* ============================================================
@@ -46,6 +85,16 @@ body {
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+/* Light theme: the animated starfield is a dark-space canvas, so swap it for a
+   soft daylit sky-glow on the body itself. */
+:root[data-theme='light'] #starfield { display: none; }
+:root[data-theme='light'] body {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, var(--sky-glow), transparent),
+    var(--bg-0);
+  background-attachment: fixed;
 }
 
 h1, h2, h3, h4 {
@@ -93,7 +142,6 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  backdrop-filter: blur(8px);
   transition: border-color 0.25s ease, transform 0.25s ease;
 }
 .hud-card::before, .hud-card::after {
@@ -232,7 +280,7 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
 .prose .gallery { margin: 2rem 0; }
 .prose .gallery-stage {
   aspect-ratio: 16 / 9;
-  background: #05080f;
+  background: var(--bg-0);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   display: flex;
@@ -272,7 +320,7 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   border: 1px solid var(--line);
   border-radius: 6px;
   overflow: hidden;
-  background: #05080f;
+  background: var(--bg-0);
   cursor: pointer;
   opacity: 0.5;
   transition: opacity 0.15s ease, border-color 0.15s ease;
@@ -304,7 +352,7 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 50%;
-  background: #05080f;
+  background: var(--bg-0);
   color: var(--text-1);
   cursor: pointer;
   transition: opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease;

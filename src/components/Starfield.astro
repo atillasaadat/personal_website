@@ -32,12 +32,15 @@
   let w = 0, h = 0, raf = 0, last = 0, nextShoot = 0;
 
   function resize() {
-    const dpr = Math.min(devicePixelRatio || 1, 2);
+    // Decorative background: render at 1x device pixels. On HiDPI/Retina this
+    // cuts the per-frame fill cost by up to 4x with no visible loss on dot-sized
+    // stars, which keeps the always-running canvas from dragging frame rate.
+    const dpr = 1;
     w = innerWidth; h = innerHeight;
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const count = Math.min(260, Math.floor((w * h) / 6500));
+    const count = Math.min(170, Math.floor((w * h) / 9500));
     stars = Array.from({ length: count }, () => {
       const depth = Math.random();           // 0 = far/small/slow, 1 = near/big/fast
       return {
@@ -121,20 +124,25 @@
     }
   }
 
+  const isLight = () => document.documentElement.dataset.theme === 'light';
+  function start() {
+    if (reduced || isLight() || raf) return;
+    last = 0;
+    raf = requestAnimationFrame(frame);
+  }
+  function pause() {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+  }
+
   resize();
   addEventListener('resize', () => { resize(); if (reduced) drawStatic(); });
 
   if (reduced) {
     drawStatic();
   } else {
-    raf = requestAnimationFrame(frame);
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        cancelAnimationFrame(raf);
-      } else {
-        last = 0;
-        raf = requestAnimationFrame(frame);
-      }
-    });
+    start();
+    document.addEventListener('visibilitychange', () => (document.hidden ? pause() : start()));
+    // The light theme hides the canvas; stop animating to save CPU, resume on dark.
+    document.addEventListener('themechange', () => (isLight() ? pause() : start()));
   }
 </script>

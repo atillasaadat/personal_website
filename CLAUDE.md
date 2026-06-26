@@ -57,8 +57,9 @@ site_files/           # ARCHIVE: raw Wix media export, reference only, not deplo
 |---|---|
 | `/` | Hero/about (GNC Engineer II @ Varda), specialties, projects grid (`#projects`, the full post list), live 3D satellite map (Cesium globe), awards (`#awards`), contact/social. The nav "Projects" and "Awards" links scroll to these sections rather than separate pages. |
 | `/projects` | Redirects to `/#projects` (the homepage section). Kept only so old/bookmarked links don't 404. |
-| `/research` | PhD-style research record: interests, research positions (with advisors), and publications grouped by type (thesis, journal, conference, technical reports, patents, posters) plus academic service. Data-driven from arrays in `research.astro`; entries cross-link to related on-site posts and to ORCID/Google Scholar/ResearchGate. |
-| `/about` | Personal bio, photo gallery (vanilla-JS lightbox, images in `public/media/about-me/`), skills matrix, experience/education timeline, and certifications/affiliations (EMT, PADI Rescue Diver, Civil Air Patrol, AIAA). |
+| `/research` | PhD-style research record: a two-column hero (intro + ORCID/Scholar/ResearchGate profile links on the left, auto-looping research photo gallery on the right), then interests, research positions (with advisors), and publications grouped by type (thesis, journal, conference, technical reports, patents, posters) plus academic service. Data-driven from arrays in `research.astro`; each entry links its paper/DOI/Google-Patents source and a "Project Page" cross-link to the related on-site post. |
+| `/about` | Two-column layout: bio text on the left, auto-looping photo gallery on the right (images in `public/media/about-me/`), then skills matrix, experience/education timeline (org names link to company/school sites), and certifications/affiliations (EMT, PADI Rescue Diver, Civil Air Patrol, AIAA). |
+| `/mit-ai-competition-model-description` | Redirect (301) to `/post/mit-storm-ai-challenge`. The self-hosted STORM model-description PDF was retired; the paper now lives on ResearchGate, linked from the post and `/research`. |
 | `/post/<slug>` | Individual project/blog post, **slugs must match the old Wix URLs** to preserve inbound links |
 | `/cv` | Embedded + downloadable CV PDF |
 

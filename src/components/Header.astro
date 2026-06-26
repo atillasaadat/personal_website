@@ -16,18 +16,34 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
       <span class="brand-mark" aria-hidden="true">🛰️</span>
       <span class="brand-name">Atilla Saadat</span>
     </a>
-    <button id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
-    <ul id="nav-menu">
-      {links.map(({ href, label }) => (
-        <li>
-          <a href={href} aria-current={path === href.replace(/\/$/, '') ? 'page' : undefined}>
-            {label}
-          </a>
-        </li>
-      ))}
-    </ul>
+    <div class="nav-right">
+      <ul id="nav-menu">
+        {links.map(({ href, label }) => (
+          <li>
+            <a href={href} aria-current={path === href.replace(/\/$/, '') ? 'page' : undefined}>
+              {label}
+            </a>
+          </li>
+        ))}
+      </ul>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light theme">
+        <svg class="ico ico-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2" />
+          <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="12" y1="2.5" x2="12" y2="5" /><line x1="12" y1="19" x2="12" y2="21.5" />
+            <line x1="2.5" y1="12" x2="5" y2="12" /><line x1="19" y1="12" x2="21.5" y2="12" />
+            <line x1="5.1" y1="5.1" x2="6.9" y2="6.9" /><line x1="17.1" y1="17.1" x2="18.9" y2="18.9" />
+            <line x1="18.9" y1="5.1" x2="17.1" y2="6.9" /><line x1="6.9" y1="17.1" x2="5.1" y2="18.9" />
+          </g>
+        </svg>
+        <svg class="ico ico-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+        </svg>
+      </button>
+      <button id="nav-toggle" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </nav>
 </header>
 
@@ -37,8 +53,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     top: 0;
     z-index: 50;
     height: var(--header-h);
-    background: rgba(5, 8, 15, 0.75);
-    backdrop-filter: blur(12px);
+    background: var(--header-bg);
     border-bottom: 1px solid var(--line);
   }
   nav {
@@ -58,6 +73,8 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   }
   .brand:hover { text-decoration: none; }
   .brand-mark { font-size: 1.1rem; line-height: 1; }
+
+  .nav-right { display: flex; align-items: center; gap: 1.1rem; }
   ul {
     display: flex;
     gap: 1.25rem;
@@ -74,6 +91,27 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   }
   ul a:hover { color: var(--accent); text-decoration: none; }
   ul a[aria-current='page'] { color: var(--accent); }
+
+  .theme-toggle {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: none;
+    color: var(--text-1);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+  .theme-toggle:hover { color: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+  .theme-toggle .ico { width: 18px; height: 18px; fill: currentColor; }
+  .theme-toggle .ico-sun circle { fill: currentColor; }
+  .theme-toggle .ico-moon { display: none; }
+  :root[data-theme='light'] .theme-toggle .ico-sun { display: none; }
+  :root[data-theme='light'] .theme-toggle .ico-moon { display: block; }
 
   #nav-toggle {
     display: none;
@@ -93,22 +131,22 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 
   @media (max-width: 720px) {
     #nav-toggle { display: flex; }
-    ul {
+    #nav-menu {
       position: absolute;
       top: var(--header-h);
       left: 0;
       right: 0;
       flex-direction: column;
       gap: 0;
-      background: rgba(5, 8, 15, 0.97);
+      background: var(--bg-0);
       border-bottom: 1px solid var(--line);
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.25s ease;
     }
-    ul.open { max-height: 480px; }
-    ul li { border-top: 1px solid var(--line); }
-    ul a { display: block; padding: 1rem 1.25rem; }
+    #nav-menu.open { max-height: 480px; }
+    #nav-menu li { border-top: 1px solid var(--line); }
+    #nav-menu a { display: block; padding: 1rem 1.25rem; }
     #nav-toggle[aria-expanded='true'] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
     #nav-toggle[aria-expanded='true'] span:nth-child(2) { opacity: 0; }
     #nav-toggle[aria-expanded='true'] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
@@ -116,16 +154,45 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 </style>
 
 <script>
-  const toggle = document.getElementById('nav-toggle')!;
-  const menu = document.getElementById('nav-menu')!;
-  toggle.addEventListener('click', () => {
-    const open = menu.classList.toggle('open');
-    toggle.setAttribute('aria-expanded', String(open));
-  });
-  menu.addEventListener('click', (e) => {
-    if ((e.target as HTMLElement).tagName === 'A') {
-      menu.classList.remove('open');
-      toggle.setAttribute('aria-expanded', 'false');
+  // Re-bind on every page view (header DOM is swapped on client-side nav).
+  function setupHeader() {
+    const navToggle = document.getElementById('nav-toggle');
+    const menu = document.getElementById('nav-menu');
+    if (navToggle && menu && !navToggle.dataset.bound) {
+      navToggle.dataset.bound = '1';
+      navToggle.addEventListener('click', () => {
+        const open = menu.classList.toggle('open');
+        navToggle.setAttribute('aria-expanded', String(open));
+      });
+      menu.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).tagName === 'A') {
+          menu.classList.remove('open');
+          navToggle.setAttribute('aria-expanded', 'false');
+        }
+      });
     }
-  });
+
+    const themeBtn = document.getElementById('theme-toggle');
+    if (themeBtn) {
+      const sync = () => {
+        const light = document.documentElement.dataset.theme === 'light';
+        themeBtn.setAttribute('aria-pressed', String(light));
+        themeBtn.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', light ? '#eef2f9' : '#05080f');
+      };
+      sync();
+      if (!themeBtn.dataset.bound) {
+        themeBtn.dataset.bound = '1';
+        themeBtn.addEventListener('click', () => {
+          const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+          document.documentElement.dataset.theme = next;
+          try { localStorage.setItem('theme', next); } catch (e) {}
+          document.dispatchEvent(new CustomEvent('themechange', { detail: next }));
+          sync();
+        });
+      }
+    }
+  }
+  document.addEventListener('astro:page-load', setupHeader);
 </script>

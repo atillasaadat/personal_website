@@ -1,13 +1,24 @@
 ---
 import Base from '../layouts/Base.astro';
+import AutoGallery from '../components/AutoGallery.astro';
 
 // Bold my own name wherever it appears in an author/inventor list.
 const me = (s: string) => s.replace(/(Saadat,?\s*A\.?)/g, '<b>$1</b>');
 
+const researchGallery = [
+  { src: '/media/about-me/droid-cleanroom.jpg', caption: "Turion Space's Droid satellite, the platform behind the AMOS RSO-imaging work" },
+  { src: '/media/about-me/iac-presenting.jpg', caption: 'Presenting On-Orbit Inertia Tensor Estimation at the International Astronautical Congress, Paris' },
+  { src: '/media/about-me/amos-poster.jpg', caption: 'Presenting autonomous RSO-imaging mission planning at the AMOS Conference, Maui' },
+  { src: '/media/about-me/smallsat-award.jpg', caption: '1st place, Frank J. Redd Student Competition, Small Satellite Conference 2022' },
+  { src: '/media/about-me/jpl.jpg', caption: 'NASA JPL F Prime workshop, foundation for the adaptive-telemetry research' },
+  { src: '/media/about-me/icasse-presentation.jpg', caption: 'Presenting reaction-wheel fault isolation at ICASSE, Toronto' },
+  { src: '/media/about-me/winsat-soldering.jpg', caption: 'Hands-on ADCS avionics work during graduate research' },
+];
+
 const profiles = [
-  { label: 'ORCID', id: '0000-0001-9375-970X', href: 'https://orcid.org/0000-0001-9375-970X' },
-  { label: 'Google Scholar', id: 'Profile', href: 'https://scholar.google.com/citations?user=LDy19UwAAAAJ&hl=en' },
   { label: 'ResearchGate', id: 'Profile', href: 'https://www.researchgate.net/profile/Atilla_Saadat' },
+  { label: 'Google Scholar', id: 'Profile', href: 'https://scholar.google.com/citations?user=LDy19UwAAAAJ&hl=en' },
+  { label: 'ORCID', id: '0000-0001-9375-970X', href: 'https://orcid.org/0000-0001-9375-970X' },
 ];
 
 const interests = [
@@ -84,6 +95,11 @@ const conferences = [
     year: '2025',
     title: 'End-to-End Autonomous Mission Planning and Spacecraft Attitude Optimization for Resident Space Object Imaging',
     venue: 'Advanced Maui Optical and Space Surveillance Technologies (AMOS) Conference 2025, Maui, HI',
+    links: [
+      { label: 'AMOS', href: 'https://amostech.space/year/2025/end-to-end-autonomous-mission-planning-and-spacecraft-attitude-optimization-for-resident-space-object-imaging/' },
+      { label: 'Paper', href: 'https://www.researchgate.net/publication/395773467_End-to-End_Autonomous_Mission_Planning_and_Spacecraft_Attitude_Optimization_for_Resident_Space_Object_Imaging' },
+      { label: 'Poster', href: 'https://www.researchgate.net/publication/395773552_End-to-End_Autonomous_Mission_Planning_and_Spacecraft_Attitude_Optimization_for_Resident_Space_Object_Imaging_Motivation_and_Objectives' },
+    ],
     post: '/post/gnc-engineer-turion-space',
   },
   {
@@ -101,6 +117,7 @@ const conferences = [
     title: 'On-Orbit Spacecraft Inertia Tensor Estimation',
     venue: 'International Astronautical Congress (IAC) 2022, Paris, France',
     note: 'CSA Canadian delegate selection',
+    links: [{ label: 'Paper', href: 'https://www.researchgate.net/publication/365595291_On-orbit_Spacecraft_Inertia_Tensor_Estimation' }],
     post: '/post/masc-thesis-ch-2-on-orbit-spacecraft-inertia-tensor-estimation',
   },
   {
@@ -108,6 +125,7 @@ const conferences = [
     year: '2020',
     title: 'Fault Isolation of Reaction Wheels On-board 3-Axis Controlled In-Orbit Satellite Using Machine Learning Techniques',
     venue: 'IAC-20.B4.9-GTS.5.10, International Astronautical Congress 2020, Dubai (Online), UAE',
+    links: [{ label: 'Paper', href: 'https://www.researchgate.net/publication/344676787_Fault_Isolation_of_Reaction_Wheels_onboard_3-axis_Controlled_in-orbit_Satellite_Using_Machine_Learning_Techniques' }],
     post: '/post/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques',
   },
   {
@@ -115,6 +133,7 @@ const conferences = [
     year: '2019',
     title: 'Fault isolation of reaction wheels on-board 3-axis controlled in-orbit satellite using ensemble machine learning techniques',
     venue: 'International Conference on Aerospace System Science and Engineering (ICASSE), Toronto, ON',
+    links: [{ label: 'Paper', href: 'https://www.researchgate.net/publication/336106932_Fault_Isolation_of_Reaction_Wheels_Onboard_3-axis_Controlled_In-orbit_Satellites_Using_Ensemble_Machine_Learning_Techniques' }],
     post: '/post/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques',
   },
 ];
@@ -125,7 +144,7 @@ const techReports = [
     year: '2025',
     title: 'Reconstructing ESA Time-Series Trojans via Fourier-Regularized Deep Learning',
     venue: 'Technical Report, CS-7643 Deep Learning, Georgia Institute of Technology',
-    links: [{ label: 'DOI', href: 'https://doi.org/10.13140/RG.2.2.17228.68480' }],
+    links: [{ label: 'Paper', href: 'https://doi.org/10.13140/RG.2.2.17228.68480' }],
   },
   {
     authors: 'Saadat, A.',
@@ -133,7 +152,6 @@ const techReports = [
     title: 'Real-Time Thermospheric Density Forecasting with a Metric-Aligned BiGRU-Attention Network for Space Situational Awareness',
     venue: 'Technical Report, MIT ARCLab STORM-AI Competition',
     links: [
-      { label: 'PDF', href: '/files/MIT_ARCLab_STORM_AI_Model_Description.pdf' },
       { label: 'Paper', href: 'https://www.researchgate.net/publication/393786213_Real-Time_Thermospheric_Density_Forecasting_with_a_Metric-Aligned_BiGRU-Attention_Network' },
     ],
     post: '/post/mit-storm-ai-challenge',
@@ -146,12 +164,14 @@ const patents = [
     year: '2020',
     title: 'Method and Computing System for Estimating Parameter for Robot Operation',
     note: 'USA (Active) · Japan (Active) · China (Pending)',
+    links: [{ label: 'Google Patents', href: 'https://patents.google.com/patent/US12076866B2/en' }],
   },
   {
     authors: 'Saadat, A., & Usui, K.',
     year: '2020',
     title: 'Method and Computing System for Determining a Value of an Error Parameter Indicative of Quality of Robot Calibration',
     note: 'USA (Active) · Japan (Active) · China (Pending)',
+    links: [{ label: 'Google Patents', href: 'https://patents.google.com/patent/US12485539B2/en' }],
   },
 ];
 
@@ -200,22 +220,30 @@ const sections = [
     <div class="section-head">
       <p class="kicker">// RESEARCH</p>
       <h2>Research &amp; Publications</h2>
-      <p class="intro">
-        Spacecraft guidance, navigation, and control engineer with research spanning attitude
-        determination and control, state estimation, autonomous mission planning, and machine
-        learning for aerospace. Below is a complete record of my publications, patents, and research
-        positions.
-      </p>
-      <ul class="profiles">
-        {profiles.map((p) => (
-          <li>
-            <a class="profile" href={p.href} target="_blank" rel="noopener">
-              <span class="p-label">{p.label}</span>
-              <span class="p-id">{p.id}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
+    </div>
+
+    <div class="research-split">
+      <div class="research-intro">
+        <p class="intro">
+          Spacecraft guidance, navigation, and control engineer with research spanning attitude
+          determination and control, state estimation, autonomous mission planning, and machine
+          learning for aerospace. Below is a complete record of my publications, patents, and research
+          positions.
+        </p>
+        <ul class="profiles">
+          {profiles.map((p) => (
+            <li>
+              <a class="profile" href={p.href} target="_blank" rel="noopener">
+                <span class="p-label">{p.label}</span>
+                <span class="p-id">{p.id}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div class="research-gallery">
+        <AutoGallery images={researchGallery} ratio="4 / 5" label="Research photos of Atilla Saadat" />
+      </div>
     </div>
 
     <h3 class="block-head">Research Interests</h3>
@@ -258,7 +286,7 @@ const sections = [
                 {c.links && c.links.map((l: any) => (
                   <a class="cite-link" href={l.href} target="_blank" rel="noopener">{l.label} ↗</a>
                 ))}
-                {c.post && <a class="cite-link cite-post" href={c.post}>Related project →</a>}
+                {c.post && <a class="cite-link cite-post" href={c.post}>Project Page →</a>}
               </p>
             </li>
           ))}
@@ -276,7 +304,20 @@ const sections = [
 </Base>
 
 <style>
-  .intro { color: var(--text-1); max-width: 70ch; font-size: 1.05rem; }
+  .research-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: start;
+    margin-top: -0.5rem;
+  }
+  .research-gallery { position: sticky; top: calc(var(--header-h) + 1.25rem); }
+  @media (max-width: 820px) {
+    .research-split { grid-template-columns: minmax(0, 1fr); }
+    .research-gallery { position: static; max-width: 460px; margin-inline: auto; width: 100%; }
+  }
+
+  .intro { color: var(--text-1); max-width: 65ch; font-size: 1.05rem; text-wrap: pretty; }
 
   .profiles {
     display: flex;

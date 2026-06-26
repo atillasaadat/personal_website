@@ -101,6 +101,21 @@ const structuredData = {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Apply the saved theme (default dark) before first paint, and re-apply
+         after each view-transition swap so it survives client-side navigation. -->
+    <script is:inline>
+      (function () {
+        var apply = function () {
+          try {
+            document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';
+          } catch (e) {
+            document.documentElement.dataset.theme = 'dark';
+          }
+        };
+        apply();
+        document.addEventListener('astro:after-swap', apply);
+      })();
+    </script>
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="author" content="Atilla Saadat" />

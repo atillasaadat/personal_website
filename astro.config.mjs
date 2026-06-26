@@ -8,7 +8,7 @@ export default defineConfig({
     sitemap({
       // Keep redirect-only routes (/projects, /resume) out of the sitemap so
       // Google isn't told to index URLs that immediately 301/refresh away.
-      filter: (page) => !/\/(projects|resume)\/?$/.test(page),
+      filter: (page) => !/\/(projects|resume|mit-ai-competition-model-description)\/?$/.test(page),
       changefreq: 'monthly',
       priority: 0.7,
       lastmod: new Date(),
