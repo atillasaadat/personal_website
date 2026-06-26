@@ -61,4 +61,8 @@ Varda has flown a growing cadence of W-Series capsules. The footage below, from 
 
 Beyond flying today's vehicles, I serve as the **GNC Responsible Engineer for Bus Block 2**, architecting the next generation of Varda reentry vehicles designed for **multi-vehicle operations and a higher mission cadence**. The goal is to make returning material from space routine: more capsules, flying more often, each one landing exactly where it should.
 
+![Atilla Saadat with a Varda W-Series capsule bus in the cleanroom](/media/varda/VardaSpace_AtillaSaadat.jpg)
+
+*With a Varda W-Series capsule bus in the cleanroom.*
+
 In-space manufacturing only matters if you can reliably get the product back. That return, the trajectory, the dispersions, the operations, and the landing, is the problem I get to work on every day.

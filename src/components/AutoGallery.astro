@@ -10,9 +10,10 @@ interface Props {
   label?: string;
 }
 const { images, interval = 4500, ratio = '4 / 5', label = 'Photo gallery' } = Astro.props;
-// Tiny WebP thumbnail next to each full image: /about-me/x.jpg -> /about-me/thumbs/x.webp
+// Tiny WebP thumbnail next to each full image, in a sibling thumbs/ folder:
+// /media/<dir>/x.jpg -> /media/<dir>/thumbs/x.webp
 const thumbOf = (src: string) =>
-  src.replace('/about-me/', '/about-me/thumbs/').replace(/\.jpe?g$/i, '.webp');
+  src.replace(/\/([^/]+)\.jpe?g$/i, '/thumbs/$1.webp');
 ---
 <figure
   class="ag"
@@ -30,6 +31,12 @@ const thumbOf = (src: string) =>
         decoding="async"
         fetchpriority="low"
       />
+    </button>
+    <button class="ag-arrow ag-prev" type="button" aria-label="Previous image">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7"/></svg>
+    </button>
+    <button class="ag-arrow ag-next" type="button" aria-label="Next image">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
     </button>
     <span class="ag-count mono" aria-hidden="true"><span class="ag-cur">1</span> / {images.length}</span>
   </div>
@@ -102,6 +109,47 @@ const thumbOf = (src: string) =>
     transition: opacity 0.35s ease;
   }
   .ag.is-swapping .ag-main { opacity: 0; }
+
+  .ag-arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    cursor: pointer;
+    opacity: 0.78;
+    transition: opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .ag-arrow svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .ag-arrow[hidden] { display: none; }
+  .ag-arrow:hover { opacity: 1; background: rgba(0, 0, 0, 0.7); border-color: var(--accent); color: var(--accent); }
+  .ag-arrow:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ag-prev { left: 0.6rem; }
+  .ag-next { right: 0.6rem; }
+  @media (max-width: 560px) {
+    .ag-arrow { width: 34px; height: 34px; }
+    .ag-arrow svg { width: 15px; height: 15px; }
+    .ag-prev { left: 0.45rem; }
+    .ag-next { right: 0.45rem; }
+  }
 
   .ag-count {
     position: absolute;
@@ -253,6 +301,15 @@ const thumbOf = (src: string) =>
       let playing = false;
       const ring = root.querySelector<SVGCircleElement>('.ag-ring circle');
 
+      // Stage arrows step the gallery but, unlike the auto-loop, do not wrap:
+      // the prev arrow hides on the first image and next hides on the last.
+      const prevBtn = root.querySelector<HTMLButtonElement>('.ag-prev');
+      const nextBtn = root.querySelector<HTMLButtonElement>('.ag-next');
+      const updateArrows = () => {
+        if (prevBtn) prevBtn.hidden = cur === 0;
+        if (nextBtn) nextBtn.hidden = cur === items.length - 1;
+      };
+
       // Preload a full image so the swap is instant when we reach it.
       const preload = (i: number) => {
         const im = new Image();
@@ -284,6 +341,7 @@ const thumbOf = (src: string) =>
           t.setAttribute('aria-selected', on ? 'true' : 'false');
         });
         centerThumb();
+        updateArrows();
         preload(cur + 1); // ready the next one ahead of time
       };
 
@@ -313,9 +371,13 @@ const thumbOf = (src: string) =>
 
       thumbs.forEach((t) => t.addEventListener('click', () => { stop(); show(Number(t.dataset.i)); }));
       toggle.addEventListener('click', () => (playing ? stop() : play()));
-      // Hover pauses the ring in place (no reset), so leaving resumes in sync.
-      root.addEventListener('mouseenter', () => { if (playing) root.classList.add('is-paused'); });
-      root.addEventListener('mouseleave', () => { if (playing) root.classList.remove('is-paused'); });
+
+      // Stage arrows: pause the auto-loop and step the gallery. They sit above
+      // the zoom button, so a click here navigates instead of opening the lightbox.
+      if (items.length < 2) { prevBtn?.remove(); nextBtn?.remove(); }
+      prevBtn?.addEventListener('click', () => { stop(); show(cur - 1); });
+      nextBtn?.addEventListener('click', () => { stop(); show(cur + 1); });
+      updateArrows(); // initial state: prev hidden on the first image
 
       if (lb && lbImg && lbCap) {
         const syncLb = () => { lbImg.src = items[cur].src; lbImg.alt = items[cur].cap; lbCap.textContent = items[cur].cap; };

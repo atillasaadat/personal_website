@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import AutoGallery from '../components/AutoGallery.astro';
 
 const gallery = [
+  { src: '/media/varda/VardaSpace_AtillaSaadat.jpg', caption: 'With a Varda W-Series capsule bus in the cleanroom' },
   { src: '/media/about-me/droid-cleanroom.jpg', caption: "With Turion Space's Droid satellite in the cleanroom" },
   { src: '/media/about-me/iac-presenting.jpg', caption: 'Presenting at the International Astronautical Congress, Paris' },
   { src: '/media/about-me/amos-poster.jpg', caption: 'Presenting at the AMOS Conference, Maui' },
@@ -36,18 +37,18 @@ const skills = [
 // public/media/logos/ and set `logo` to its path (e.g. '/media/logos/varda.svg')
 // to replace the monogram fallback in `short`.
 const experience = [
-  { period: 'Nov 2025 - Present', role: 'Spacecraft GNC Engineer II', org: 'Varda Space Industries', url: 'https://www.varda.com', place: 'Los Angeles, CA', short: 'V', logo: '' },
-  { period: 'Oct 2022 - Nov 2025', role: 'Spacecraft GNC Engineer', org: 'Turion Space Corp.', url: 'https://www.turionspace.com', place: 'Irvine, CA', short: 'TS', logo: '' },
-  { period: 'May 2022 - Sep 2022', role: 'Hardware Functional Safety Engineering Intern', org: 'NVIDIA Corp.', url: 'https://www.nvidia.com', place: 'Santa Clara, CA', short: 'N', logo: '' },
-  { period: 'Sep 2019 - Jan 2020', role: 'Robotic Controls Engineering Intern II', org: 'Mujin Inc.', url: 'https://mujin-corp.com/', place: 'Tokyo, Japan', short: 'M', logo: '' },
-  { period: '2018 - 2020', role: 'Founder, President & Lead Space Systems Engineer', org: 'WinSAT, University of Windsor', url: 'https://www.uwindsor.ca', place: 'Windsor, ON', short: 'W', logo: '' },
-  { period: 'May 2017 - May 2018', role: 'Robotic Controls Engineering Intern I', org: 'Mujin Inc.', url: 'https://mujin-corp.com/', place: 'Tokyo, Japan', short: 'M', logo: '' },
-  { period: 'May 2016 - Sep 2016', role: 'Space Systems Engineering Intern (Lunar Exploration)', org: 'Canadensys Aerospace Corp.', url: 'https://www.canadensys.com', place: 'Toronto, ON', short: 'C', logo: '' },
+  { period: 'Nov 2025 - Present', role: 'Spacecraft GNC Engineer II', org: 'Varda Space Industries', url: 'https://www.varda.com', place: 'Los Angeles, CA', short: 'V', logo: '/media/logos/varda.png' },
+  { period: 'Oct 2022 - Nov 2025', role: 'Spacecraft GNC Engineer', org: 'Turion Space Corp.', url: 'https://www.turionspace.com', place: 'Irvine, CA', short: 'TS', logo: '/media/logos/turion.png' },
+  { period: 'May 2022 - Sep 2022', role: 'Hardware Functional Safety Engineering Intern', org: 'NVIDIA Corp.', url: 'https://www.nvidia.com', place: 'Santa Clara, CA', short: 'N', logo: '/media/logos/nvidia.png' },
+  { period: 'Sep 2019 - Jan 2020', role: 'Robotic Controls Engineering Intern II', org: 'Mujin Inc.', url: 'https://mujin-corp.com/', place: 'Tokyo, Japan', short: 'M', logo: '/media/logos/mujin.png' },
+  { period: '2018 - 2020', role: 'Founder, President & Lead Space Systems Engineer', org: 'WinSAT, University of Windsor', url: 'https://www.uwindsor.ca', place: 'Windsor, ON', short: 'W', logo: '/media/logos/uwindsor.png' },
+  { period: 'May 2017 - May 2018', role: 'Robotic Controls Engineering Intern I', org: 'Mujin Inc.', url: 'https://mujin-corp.com/', place: 'Tokyo, Japan', short: 'M', logo: '/media/logos/mujin.png' },
+  { period: 'May 2016 - Sep 2016', role: 'Space Systems Engineering Intern (Lunar Exploration)', org: 'Canadensys Aerospace Corp.', url: 'https://www.canadensys.com', place: 'Toronto, ON', short: 'C', logo: '/media/logos/canadensys.png' },
 ];
 const education = [
-  { period: 'Jan 2025 - Present', role: 'M.S. Computer Science (Artificial Intelligence)', org: 'Georgia Institute of Technology', url: 'https://www.gatech.edu', place: 'Atlanta, GA', short: 'GT', logo: '' },
-  { period: 'Sep 2020 - Aug 2022', role: 'M.A.Sc. Aerospace Science & Engineering', org: 'University of Toronto, UTIAS Space Flight Laboratory', url: 'https://sflmissions.com', place: 'Toronto, ON', short: 'UT', logo: '' },
-  { period: 'Sep 2015 - Aug 2020', role: 'B.A.Sc. Mechanical Engineering (Aerospace Option)', org: 'University of Windsor', url: 'https://www.uwindsor.ca', place: 'Windsor, ON', short: 'UW', logo: '' },
+  { period: 'Jan 2025 - Present', role: 'M.S. Computer Science (Artificial Intelligence)', org: 'Georgia Institute of Technology', url: 'https://www.gatech.edu', place: 'Atlanta, GA', short: 'GT', logo: '/media/logos/gatech.png' },
+  { period: 'Sep 2020 - Aug 2022', role: 'M.A.Sc. Aerospace Science & Engineering', org: 'University of Toronto, UTIAS Space Flight Laboratory', url: 'https://sflmissions.com', place: 'Toronto, ON', short: 'UT', logo: '/media/logos/uoft.png' },
+  { period: 'Sep 2015 - Aug 2020', role: 'B.A.Sc. Mechanical Engineering (Aerospace Option)', org: 'University of Windsor', url: 'https://www.uwindsor.ca', place: 'Windsor, ON', short: 'UW', logo: '/media/logos/uwindsor.png' },
 ];
 
 const certs = [
@@ -81,34 +82,38 @@ const affiliations = [
           I'm a spacecraft GNC engineer in Los Angeles. At
           <a href="https://www.varda.com" target="_blank" rel="noopener">Varda Space Industries</a>
           I work on guidance, navigation, and control for our reentry vehicles, which means everything
-          from designing trajectories and running the Monte Carlo analysis to flying the missions once
-          they reach orbit. I'm also working toward an M.S. in Computer Science at
+          from designing trajectories and running Monte Carlo analysis to flying the missions once they
+          reach orbit. I'm also working toward an M.S. in Computer Science at
           <a href="https://www.gatech.edu" target="_blank" rel="noopener">Georgia Tech</a>, with a
-          focus on AI.
+          focus on artificial intelligence.
         </p>
         <p>
-          I got into this by building hardware. As an undergrad at the
-          <a href="https://www.uwindsor.ca" target="_blank" rel="noopener">University of Windsor</a> I
-          started <a href="/post/winsat-3u-leo-cube-satellite">WinSAT</a>, the school's first satellite team, and we took a 3U CubeSat to first place in
-          the Canadian Satellite Design Challenge. That led to graduate research at the
+          My path started as an undergraduate at the
+          <a href="https://www.uwindsor.ca" target="_blank" rel="noopener">University of Windsor</a>,
+          where I founded <a href="/post/winsat-3u-leo-cube-satellite">WinSAT</a>, the school's first
+          CubeSat team. I led a group of undergraduate and graduate students in designing a 3U CubeSat
+          that took first place in the Canadian Satellite Design Challenge, and I researched reaction
+          wheel fault detection and recovery using ensemble machine learning. That led to graduate
+          research at the
           <a href="https://sflmissions.com" target="_blank" rel="noopener">University of Toronto's Space Flight Laboratory</a>,
-          where I worked on attitude control for the HawkEye 360 satellites and won the student paper
-          competition at the Small Satellite Conference. Earlier I'd written robotics dynamics software
-          at <a href="https://mujin-corp.com/" target="_blank" rel="noopener">Mujin</a> in Tokyo, which
+          where I worked on the attitude determination and control system for the HawkEye 360 satellites
+          and won the student paper competition at the Small Satellite Conference. Earlier I'd written
+          robotics dynamics software at
+          <a href="https://mujin-corp.com/" target="_blank" rel="noopener">Mujin Inc.</a> in Tokyo, which
           turned into two patents, and spent a summer on automotive functional safety at
-          <a href="https://www.nvidia.com" target="_blank" rel="noopener">NVIDIA</a>. Most recently I was
-          at <a href="https://www.turionspace.com" target="_blank" rel="noopener">Turion Space</a> for
-          three years, where I took the Droid satellites from a concept all the way to operating them in
-          orbit.
+          <a href="https://www.nvidia.com" target="_blank" rel="noopener">NVIDIA</a>. Most recently I
+          spent three years at
+          <a href="https://www.turionspace.com" target="_blank" rel="noopener">Turion Space</a>, where I
+          took the Droid satellites from concept all the way to operating them in orbit.
         </p>
         <p>
-          Most of my time away from work goes to emergency response and the water. I'm a Nationally
-          Registered EMT and a PADI Rescue Diver, with training in wilderness and emergency
-          first-response medicine. I also serve as an Aerospace Education Officer with the
-          <a href="https://sq232.cap.gov" target="_blank" rel="noopener">Civil Air Patrol</a>,
-          teaching cadets rocketry and electronics, and I run the speaker program for the
+          Outside of work, I'm a Nationally Registered EMT and a PADI Rescue Diver, with training in wilderness and emergency
+          first-response medicine. I serve as an Aerospace Education Officer with the
+          <a href="https://sq232.cap.gov" target="_blank" rel="noopener">Civil Air Patrol</a>, teaching
+          cadets rocketry and electronics, and I run the speaker program for the
           <a href="https://www.aiaa.org" target="_blank" rel="noopener">AIAA</a> Orange County section.
-          The rest of the time, I'm usually snowboarding or out for a run.
+          The rest of the time, you'll find me snowboarding, building side projects, and charting my
+          path toward the stars.
         </p>
       </div>
       <div class="about-gallery">
@@ -228,9 +233,23 @@ const affiliations = [
   }
 
   /* Experience / Education, an aligned logo-tile list */
-  .xp { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1.15rem; }
+  .xp { position: relative; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1.15rem; }
+  /* Timeline rail: a continuous line through the logo-tile centers showing the
+     chronological order. It sits behind the opaque tiles and shows in the gaps. */
+  .xp::before {
+    content: '';
+    position: absolute;
+    left: 25px;
+    top: 26px;
+    bottom: 26px;
+    width: 2px;
+    background: linear-gradient(180deg, var(--line-strong), var(--line));
+    border-radius: 2px;
+  }
   .xp-item { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 1rem; align-items: start; }
   .xp-logo {
+    position: relative;
+    z-index: 1; /* sit above the timeline rail */
     width: 52px;
     height: 52px;
     flex: 0 0 auto;
