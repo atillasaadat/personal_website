@@ -151,7 +151,41 @@ function esc(v) {
   );
 }
 
-function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources }) {
+// Display a country as "<flag image> <code>" (e.g. a US flag then "US").
+// Flag emoji are used instead of images on no platform here because Windows
+// browsers don't render flag emoji at all (they show the bare letters), so a
+// small PNG from flagcdn keeps it consistent everywhere. Falls back to just the
+// code (or "?") for anything that isn't a valid two-letter code.
+function countryLabel(cc) {
+  const code = String(cc || '').trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code)) return esc(cc || '?');
+  const lc = code.toLowerCase();
+  return (
+    `<img class="flag" src="https://flagcdn.com/20x15/${lc}.png" ` +
+    `srcset="https://flagcdn.com/40x30/${lc}.png 2x" width="20" height="15" ` +
+    `alt="" loading="lazy" decoding="async"> ${code}`
+  );
+}
+
+// Format a millisecond duration as a compact human string, or null if there's
+// no usable value (so callers can show a muted placeholder instead).
+function fmtDur(ms) {
+  const s = Math.round(Number(ms) / 1000);
+  if (!Number.isFinite(s) || s <= 0) return null;
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ${String(s % 60).padStart(2, '0')}s`;
+  const h = Math.floor(m / 60);
+  return `${h}h ${String(m % 60).padStart(2, '0')}m`;
+}
+
+// A table cell's worth of formatted duration, with a muted dot when unknown.
+function durCell(ms) {
+  const d = fmtDur(ms);
+  return d ? esc(d) : '<span class="muted">&middot;</span>';
+}
+
+function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur }) {
   const today = ymd(Date.now(), tz);
 
   const tabs = RANGES.map(
@@ -163,7 +197,7 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
     ? geo
         .map(
           (r) => `<tr>
-            <td>${esc(r.country || '?')}</td>
+            <td>${countryLabel(r.country)}</td>
             <td>${esc(r.region || '?')}</td>
             <td>${esc(r.city || '?')}</td>
             <td class="num">${r.visitors}</td>
@@ -176,10 +210,10 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
   const pageRows = topPages.length
     ? topPages
         .map(
-          (r) => `<tr><td>${esc(r.path)}</td><td class="num">${r.visitors}</td><td class="num">${r.views}</td></tr>`,
+          (r) => `<tr><td>${esc(r.path)}</td><td class="num">${r.visitors}</td><td class="num">${r.views}</td><td class="num">${durCell(pageDur[r.path])}</td></tr>`,
         )
         .join('')
-    : '<tr><td colspan="3" class="empty">No data.</td></tr>';
+    : '<tr><td colspan="4" class="empty">No data.</td></tr>';
 
   // Annotate each org with its classification, then split into the "notable"
   // set (likely employers / institutions) and the full network list.
@@ -192,7 +226,7 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
   const notableRows = notable.length
     ? notable
         .map(
-          (r) => `<tr>${orgCell(r)}<td>${esc(r.country || '?')}</td><td class="num">${r.visitors}</td><td class="num">${r.views}</td></tr>`,
+          (r) => `<tr>${orgCell(r)}<td>${countryLabel(r.country)}</td><td class="num">${r.visitors}</td><td class="num">${r.views}</td></tr>`,
         )
         .join('')
     : '<tr><td colspan="4" class="empty">No company or institution networks in this range. (Consumer ISPs and hosting traffic are listed under All networks below.)</td></tr>';
@@ -200,7 +234,7 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
   const allOrgRows = orgRows.length
     ? orgRows
         .map(
-          (r) => `<tr class="${r.kind}">${orgCell(r)}<td>${esc(r.country || '?')}</td><td class="num">${r.visitors}</td><td class="num">${r.views}</td></tr>`,
+          (r) => `<tr class="${r.kind}">${orgCell(r)}<td>${countryLabel(r.country)}</td><td class="num">${r.visitors}</td><td class="num">${r.views}</td></tr>`,
         )
         .join('')
     : '<tr><td colspan="4" class="empty">No network data yet. (Apply the latest migrations.sql, then new visits will be attributed.)</td></tr>';
@@ -301,8 +335,10 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
   .daterange button { background:rgba(94,234,212,0.14); color:#5eead4; border:1px solid #5eead4;
                border-radius:8px; padding:0.4rem 0.9rem; font:inherit; cursor:pointer; }
   .daterange button:hover { background:rgba(94,234,212,0.25); }
-  .cards { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem; }
+  .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:2rem; }
   .card { background:rgba(16,26,46,0.6); border:1px solid rgba(126,168,255,0.16); border-radius:10px; padding:1.1rem 1.25rem; }
+  .flag { width:20px; height:15px; vertical-align:-3px; margin-right:0.1rem;
+          border-radius:2px; box-shadow:0 0 0 1px rgba(126,168,255,0.18); }
   .card .n { font-size:1.7rem; font-weight:700; font-variant-numeric:tabular-nums; }
   .card .l { color:#aab8d4; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.07em; }
   h2 { font-size:1rem; margin:2rem 0 0.6rem; color:#aab8d4; }
@@ -377,6 +413,8 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
   <div class="cards">
     <div class="card"><div class="n">${totals.visitors}</div><div class="l">Unique visitors</div></div>
     <div class="card"><div class="n">${totals.views}</div><div class="l">Page views</div></div>
+    <div class="card"><div class="n">${fmtDur(dwell.avgVisit) || '&middot;'}</div><div class="l">Avg. time on site</div></div>
+    <div class="card"><div class="n">${fmtDur(dwell.avgPage) || '&middot;'}</div><div class="l">Avg. time per page</div></div>
     <div class="card"><div class="n">${notable.length}</div><div class="l">Org / institution networks</div></div>
     <div class="card"><div class="n">${totals.countries}</div><div class="l">Countries</div></div>
   </div>
@@ -413,7 +451,7 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
     <div>
       <h2>Top pages</h2>
       <table>
-        <thead><tr><th>Path</th><th class="num">Visitors</th><th class="num">Views</th></tr></thead>
+        <thead><tr><th>Path</th><th class="num">Visitors</th><th class="num">Views</th><th class="num">Avg time</th></tr></thead>
         <tbody>${pageRows}</tbody>
       </table>
     </div>
@@ -805,9 +843,12 @@ export async function onRequestGet({ request, env }) {
 
   const db = env.DB;
   const empty = { visitors: 0, views: 0, pages: 0, countries: 0 };
-  const render = (totals, geo, topPages, countries, regions, cities, orgs, refs, sources) =>
+  const render = (
+    totals, geo, topPages, countries, regions, cities, orgs, refs, sources,
+    dwell = { avgVisit: null, avgPage: null }, pageDur = {},
+  ) =>
     new Response(
-      page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources }),
+      page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur }),
       { headers: { ...SECURITY_HEADERS, 'Content-Type': 'text/html; charset=utf-8' } },
     );
 
@@ -922,6 +963,43 @@ export async function onRequestGet({ request, env }) {
       // source column missing: skip tagged-link sources
     }
 
+    // Dwell time: avg active time per page, and avg total per visit (sum of a
+    // visitor's page durations). Only rows with a recorded duration count.
+    // `dur` is a later migration, so degrade to nulls if the column is absent.
+    let dwell = { avgVisit: null, avgPage: null };
+    let pageDur = {};
+    try {
+      const p = await db
+        .prepare(
+          `SELECT AVG(dur) AS avgPage FROM pageviews
+           WHERE ts >= ? AND ts < ? AND dur IS NOT NULL AND dur > 0`,
+        )
+        .bind(start, end)
+        .first();
+      const v = await db
+        .prepare(
+          `SELECT AVG(t) AS avgVisit FROM (
+             SELECT vid, SUM(dur) AS t FROM pageviews
+             WHERE ts >= ? AND ts < ? AND dur IS NOT NULL AND dur > 0
+             GROUP BY vid)`,
+        )
+        .bind(start, end)
+        .first();
+      dwell = { avgPage: p && p.avgPage, avgVisit: v && v.avgVisit };
+
+      const pd = await db
+        .prepare(
+          `SELECT path, AVG(dur) AS avgDur FROM pageviews
+           WHERE ts >= ? AND ts < ? AND dur IS NOT NULL AND dur > 0
+           GROUP BY path`,
+        )
+        .bind(start, end)
+        .all();
+      for (const r of pd.results || []) pageDur[r.path] = r.avgDur;
+    } catch (e) {
+      // dur column missing: skip dwell-time metrics
+    }
+
     return render(
       totals,
       geo.results || [],
@@ -932,6 +1010,8 @@ export async function onRequestGet({ request, env }) {
       orgs,
       refs,
       sources,
+      dwell,
+      pageDur,
     );
   } catch (e) {
     // most likely: schema.sql not applied yet (no such table: pageviews)

@@ -100,11 +100,14 @@ export async function onRequestGet({ request, env }) {
   // supplied, so strip to a sane charset, trim, and cap length.
   const source =
     (url.searchParams.get('s') || '').replace(/[^\w .\-/]+/g, '').trim().slice(0, 64) || null;
+  // Per-pageview id (?i=) that the later dwell-time beacon uses to update this
+  // exact row with how long the visitor stayed.
+  const pvid = (url.searchParams.get('i') || '').replace(/[^a-zA-Z0-9-]+/g, '').slice(0, 64) || null;
 
   try {
     if (env.DB) {
       await env.DB.prepare(
-        'INSERT INTO pageviews (ts, path, city, region, country, lat, lng, asn, org, ref, source, vid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO pageviews (ts, path, city, region, country, lat, lng, asn, org, ref, source, pvid, vid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       )
         .bind(
           Date.now(),
@@ -118,6 +121,7 @@ export async function onRequestGet({ request, env }) {
           cf.asOrganization || null,
           ref,
           source,
+          pvid,
           vid,
         )
         .run();
@@ -127,4 +131,32 @@ export async function onRequestGet({ request, env }) {
   }
 
   return new Response(PIXEL, { headers });
+}
+
+// Dwell-time report (sent via navigator.sendBeacon, which POSTs). The client
+// reports cumulative active time on a page keyed by its per-pageview id (?i=);
+// we store the largest value seen for that row. Matched on the visitor cookie
+// too, so one visitor can't write another's pageview. Best-effort: any failure
+// is swallowed so it never affects the visitor.
+export async function onRequestPost({ request, env }) {
+  const url = new URL(request.url);
+  try {
+    const pvid = (url.searchParams.get('i') || '').replace(/[^a-zA-Z0-9-]+/g, '').slice(0, 64);
+    let dur = parseInt(url.searchParams.get('d'), 10);
+    if (env.DB && pvid && Number.isFinite(dur) && dur > 0) {
+      if (dur > 7200000) dur = 7200000; // cap at 2h; ignore absurd values
+      const cookie = request.headers.get('Cookie') || '';
+      const vid = (cookie.match(/(?:^|;\s*)vid=([^;]+)/) || [])[1] || null;
+      if (vid) {
+        await env.DB.prepare(
+          'UPDATE pageviews SET dur = ? WHERE pvid = ? AND vid = ? AND (dur IS NULL OR dur < ?)',
+        )
+          .bind(dur, pvid, vid, dur)
+          .run();
+      }
+    }
+  } catch (e) {
+    // ignore: analytics must never surface an error to the client
+  }
+  return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
 }
