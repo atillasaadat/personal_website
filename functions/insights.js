@@ -842,6 +842,23 @@ export async function onRequestGet({ request, env }) {
   }
 
   const db = env.DB;
+
+  // Exclude the owner's own machine from analytics. Reaching the (authenticated)
+  // dashboard means this is my browser, so: (1) drop a long-lived `notrack`
+  // cookie that track.js honors to never record future visits from here, and
+  // (2) delete any visits already recorded from this browser, matched by the
+  // tracking cookie (vid). This is per-machine/browser, so logging in from a new
+  // device/browser opts that one out too.
+  const myVid = cookieVal(request, 'vid');
+  const OPT_OUT_COOKIE = 'notrack=1; Path=/; Max-Age=34560000; SameSite=Lax; Secure; HttpOnly';
+  if (db && myVid) {
+    try {
+      await db.prepare('DELETE FROM pageviews WHERE vid = ?').bind(myVid).run();
+    } catch (e) {
+      // ignore: cleanup is best-effort and must not break the dashboard
+    }
+  }
+
   const empty = { visitors: 0, views: 0, pages: 0, countries: 0 };
   const render = (
     totals, geo, topPages, countries, regions, cities, orgs, refs, sources,
@@ -849,7 +866,13 @@ export async function onRequestGet({ request, env }) {
   ) =>
     new Response(
       page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur }),
-      { headers: { ...SECURITY_HEADERS, 'Content-Type': 'text/html; charset=utf-8' } },
+      {
+        headers: {
+          ...SECURITY_HEADERS,
+          'Content-Type': 'text/html; charset=utf-8',
+          'Set-Cookie': OPT_OUT_COOKIE,
+        },
+      },
     );
 
   if (!db) return render(empty, [], [], [], [], [], [], [], []);

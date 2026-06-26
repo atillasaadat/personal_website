@@ -78,6 +78,14 @@ export async function onRequestGet({ request, env }) {
     'Cache-Control': 'no-store, max-age=0',
   });
 
+  // Owner opt-out: a machine that has authenticated to /insights gets a long-
+  // lived `notrack` cookie (set by insights.js). Honor it here so my own visits
+  // are never recorded. Returns the pixel but stores nothing, and doesn't bother
+  // assigning a vid.
+  if (/(?:^|;\s*)notrack=1(?:;|$)/.test(cookie)) {
+    return new Response(PIXEL, { headers });
+  }
+
   if (!vid) {
     vid = crypto.randomUUID();
     // ~400 day cookie; HttpOnly so only the server reads it
@@ -141,11 +149,15 @@ export async function onRequestGet({ request, env }) {
 export async function onRequestPost({ request, env }) {
   const url = new URL(request.url);
   try {
+    const cookie = request.headers.get('Cookie') || '';
+    // Owner opt-out machines never inserted a row, so there's nothing to update.
+    if (/(?:^|;\s*)notrack=1(?:;|$)/.test(cookie)) {
+      return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
+    }
     const pvid = (url.searchParams.get('i') || '').replace(/[^a-zA-Z0-9-]+/g, '').slice(0, 64);
     let dur = parseInt(url.searchParams.get('d'), 10);
     if (env.DB && pvid && Number.isFinite(dur) && dur > 0) {
       if (dur > 7200000) dur = 7200000; // cap at 2h; ignore absurd values
-      const cookie = request.headers.get('Cookie') || '';
       const vid = (cookie.match(/(?:^|;\s*)vid=([^;]+)/) || [])[1] || null;
       if (vid) {
         await env.DB.prepare(
