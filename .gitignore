@@ -22,3 +22,9 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+
+# Local agent / design tooling (impeccable skill, Claude settings) - not part of the site
+.claude/
+.impeccable/
+.github/hooks/
+.github/skills/
