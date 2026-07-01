@@ -30,3 +30,27 @@ CREATE INDEX IF NOT EXISTS idx_pageviews_vid    ON pageviews(vid);
 CREATE INDEX IF NOT EXISTS idx_pageviews_org    ON pageviews(org);
 CREATE INDEX IF NOT EXISTS idx_pageviews_source ON pageviews(source);
 CREATE INDEX IF NOT EXISTS idx_pageviews_pvid   ON pageviews(pvid);
+
+-- File downloads (kept separate from pageviews so they never inflate page-view
+-- or dwell metrics). One row per click on a downloadable file link (the CV PDF,
+-- papers, etc.), recorded by track.js with the same bot filtering + Cloudflare
+-- geo/network attribution as a pageview, so the dashboard can show how many
+-- times the CV was downloaded and from where / which organization.
+CREATE TABLE IF NOT EXISTS downloads (
+  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts      INTEGER NOT NULL,   -- event time, unix milliseconds
+  path    TEXT    NOT NULL,   -- file downloaded, e.g. /files/Atilla_Saadat_CV.pdf
+  city    TEXT,               -- from Cloudflare request geo
+  region  TEXT,               -- state / province
+  country TEXT,               -- ISO-2 country code
+  lat     REAL,               -- approximate latitude  (Cloudflare geo)
+  lng     REAL,               -- approximate longitude (Cloudflare geo)
+  asn     INTEGER,            -- network autonomous-system number (Cloudflare)
+  org     TEXT,               -- network organization / ISP (cf.asOrganization)
+  ref     TEXT,               -- external referrer hostname, if any
+  vid     TEXT    NOT NULL    -- anonymous per-visitor id (cookie)
+);
+
+CREATE INDEX IF NOT EXISTS idx_downloads_ts   ON downloads(ts);
+CREATE INDEX IF NOT EXISTS idx_downloads_vid  ON downloads(vid);
+CREATE INDEX IF NOT EXISTS idx_downloads_path ON downloads(path);

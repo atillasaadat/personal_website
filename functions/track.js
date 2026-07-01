@@ -104,6 +104,38 @@ export async function onRequestGet({ request, env }) {
   const lng = parseFloat(cf.longitude);
   const asn = Number.isFinite(cf.asn) ? cf.asn : parseInt(cf.asn, 10);
   const ref = refHost(url.searchParams.get('r'));
+
+  // Download event (?e=dl): a click on a downloadable file link (the CV PDF,
+  // papers, ...). Recorded in the separate `downloads` table with the same geo /
+  // network attribution as a pageview, so downloads never inflate page-view or
+  // dwell metrics. `p` here is the file path that was clicked.
+  if (url.searchParams.get('e') === 'dl') {
+    try {
+      if (env.DB) {
+        await env.DB.prepare(
+          'INSERT INTO downloads (ts, path, city, region, country, lat, lng, asn, org, ref, vid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        )
+          .bind(
+            Date.now(),
+            path,
+            cf.city || null,
+            cf.region || null,
+            cf.country || null,
+            Number.isFinite(lat) ? lat : null,
+            Number.isFinite(lng) ? lng : null,
+            Number.isFinite(asn) ? asn : null,
+            cf.asOrganization || null,
+            ref,
+            vid,
+          )
+          .run();
+      }
+    } catch (e) {
+      // ignore: a failed analytics write must not affect the visitor
+    }
+    return new Response(PIXEL, { headers });
+  }
+
   // Optional ?source= tag from the landing link (e.g. ?source=CV). Visitor-
   // supplied, so strip to a sane charset, trim, and cap length.
   const source =

@@ -255,6 +255,30 @@ const structuredData = {
         resumeDwell(); // keep counting if the visitor returns to the tab
       }
 
+      // --- File-download tracking ---------------------------------------------
+      // Fire a beacon when a genuine file download is triggered, so /track records
+      // it in the separate `downloads` table with server-side geo/network
+      // attribution. Scoped to same-origin `/files/` links carrying the `download`
+      // attribute (the CV PDF's "Download PDF" button, papers, ...), so an inline
+      // "open in new tab" view isn't counted as a download. Delegated and
+      // registered once (survives client-side navigations). Best-effort: never
+      // blocks or alters the click, so the download proceeds normally.
+      document.addEventListener('click', function (e) {
+        try {
+          if (/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) return;
+          var el = e.target as HTMLElement;
+          var a = el.closest && el.closest('a[href][download]');
+          if (!a) return;
+          var u = new URL((a as HTMLAnchorElement).href, location.href);
+          // Same-origin links into /files/ are our downloadable documents.
+          if (u.host !== location.host || !/^\/files\//.test(u.pathname)) return;
+          new Image().src =
+            '/track?e=dl&p=' + encodeURIComponent(u.pathname) +
+            '&r=' + encodeURIComponent(document.referrer || '') +
+            '&t=' + Date.now();
+        } catch (err) {}
+      }, true);
+
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'hidden') flushDwell();
         else resumeDwell();

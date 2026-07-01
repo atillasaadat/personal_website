@@ -185,7 +185,14 @@ function durCell(ms) {
   return d ? esc(d) : '<span class="muted">&middot;</span>';
 }
 
-function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur }) {
+// Display just the file name of a download path (e.g. /files/Atilla_Saadat_CV.pdf
+// -> Atilla_Saadat_CV.pdf), which is what actually got downloaded.
+function fileLabel(p) {
+  const s = String(p || '');
+  return esc(s.split('/').filter(Boolean).pop() || s || '?');
+}
+
+function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur, downloads, downloadTotal }) {
   const today = ymd(Date.now(), tz);
 
   const tabs = RANGES.map(
@@ -257,6 +264,21 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
         )
         .join('')
     : '<tr><td colspan="3" class="empty">No tagged-link visits yet. Add <code>?source=NAME</code> to a link (e.g. your CV) to attribute clicks here.</td></tr>';
+
+  const downloadRows = downloads.length
+    ? downloads
+        .map(
+          (r) => `<tr>
+            <td>${fileLabel(r.path)}</td>
+            <td>${countryLabel(r.country)}</td>
+            <td>${esc(r.region || '?')}</td>
+            <td>${esc(r.city || '?')}</td>
+            <td>${r.org ? esc(r.org) : '<span class="muted">&middot;</span>'}</td>
+            <td class="num">${r.downloads}</td>
+          </tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="6" class="empty">No file downloads in this range yet.</td></tr>';
 
   // Country and region levels are choropleths: the client matches these keyed
   // values onto GeoJSON boundary polygons (ISO-2 for countries, ISO-2 + region
@@ -415,6 +437,7 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
     <div class="card"><div class="n">${totals.views}</div><div class="l">Page views</div></div>
     <div class="card"><div class="n">${fmtDur(dwell.avgVisit) || '&middot;'}</div><div class="l">Avg. time on site</div></div>
     <div class="card"><div class="n">${fmtDur(dwell.avgPage) || '&middot;'}</div><div class="l">Avg. time per page</div></div>
+    <div class="card"><div class="n">${downloadTotal.total || 0}</div><div class="l">CV downloads</div></div>
     <div class="card"><div class="n">${notable.length}</div><div class="l">Org / institution networks</div></div>
     <div class="card"><div class="n">${totals.countries}</div><div class="l">Countries</div></div>
   </div>
@@ -461,6 +484,12 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
   <table>
     <thead><tr><th>Source tag</th><th class="num">Visitors</th><th class="num">Views</th></tr></thead>
     <tbody>${sourceRows}</tbody>
+  </table>
+
+  <h2>CV &amp; file downloads <span class="hint">${downloadTotal.total || 0} download${(downloadTotal.total || 0) === 1 ? '' : 's'} from ${downloadTotal.visitors || 0} visitor${(downloadTotal.visitors || 0) === 1 ? '' : 's'} &middot; clicks on the CV PDF and other /files documents</span></h2>
+  <table>
+    <thead><tr><th>File</th><th>Country</th><th>Region</th><th>City</th><th>Organization / network</th><th class="num">Downloads</th></tr></thead>
+    <tbody>${downloadRows}</tbody>
   </table>
 
   <h2>By location</h2>
@@ -804,6 +833,11 @@ export async function onRequestPost({ request, env }) {
   } catch (e) {
     // ignore: e.g. table not created yet
   }
+  try {
+    if (env.DB) await env.DB.prepare('DELETE FROM downloads').run();
+  } catch (e) {
+    // ignore: e.g. downloads table not created yet
+  }
 
   // Redirect back to the dashboard so a refresh shows the now-empty data.
   return new Response(null, { status: 303, headers: { ...SECURITY_HEADERS, Location: '/insights' } });
@@ -857,15 +891,21 @@ export async function onRequestGet({ request, env }) {
     } catch (e) {
       // ignore: cleanup is best-effort and must not break the dashboard
     }
+    try {
+      await db.prepare('DELETE FROM downloads WHERE vid = ?').bind(myVid).run();
+    } catch (e) {
+      // ignore: downloads table may not exist yet; best-effort cleanup
+    }
   }
 
   const empty = { visitors: 0, views: 0, pages: 0, countries: 0 };
   const render = (
     totals, geo, topPages, countries, regions, cities, orgs, refs, sources,
     dwell = { avgVisit: null, avgPage: null }, pageDur = {},
+    downloads = [], downloadTotal = { total: 0, visitors: 0 },
   ) =>
     new Response(
-      page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur }),
+      page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur, downloads, downloadTotal }),
       {
         headers: {
           ...SECURITY_HEADERS,
@@ -1023,6 +1063,34 @@ export async function onRequestGet({ request, env }) {
       // dur column missing: skip dwell-time metrics
     }
 
+    // File downloads (CV PDF, papers). Separate table, so degrade to empty if it
+    // hasn't been created yet (apply migrations.sql).
+    let downloads = [];
+    let downloadTotal = { total: 0, visitors: 0 };
+    try {
+      const dt = await db
+        .prepare(
+          `SELECT COUNT(*) AS total, COUNT(DISTINCT vid) AS visitors
+           FROM downloads WHERE ts >= ? AND ts < ?`,
+        )
+        .bind(start, end)
+        .first();
+      if (dt) downloadTotal = dt;
+      const d = await db
+        .prepare(
+          `SELECT path, country, region, city, org,
+                  COUNT(*) AS downloads, COUNT(DISTINCT vid) AS visitors
+           FROM downloads WHERE ts >= ? AND ts < ?
+           GROUP BY path, country, region, city, org
+           ORDER BY downloads DESC, visitors DESC LIMIT 500`,
+        )
+        .bind(start, end)
+        .all();
+      downloads = d.results || [];
+    } catch (e) {
+      // downloads table missing: skip download metrics
+    }
+
     return render(
       totals,
       geo.results || [],
@@ -1035,6 +1103,8 @@ export async function onRequestGet({ request, env }) {
       sources,
       dwell,
       pageDur,
+      downloads,
+      downloadTotal,
     );
   } catch (e) {
     // most likely: schema.sql not applied yet (no such table: pageviews)

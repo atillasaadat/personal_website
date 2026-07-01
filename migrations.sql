@@ -29,6 +29,28 @@ ALTER TABLE pageviews ADD COLUMN pvid TEXT;
 ALTER TABLE pageviews ADD COLUMN dur INTEGER;
 CREATE INDEX IF NOT EXISTS idx_pageviews_pvid ON pageviews(pvid);
 
+-- Migration: add the downloads table (file-download tracking, e.g. the CV PDF).
+-- Kept separate from pageviews so downloads never inflate page-view/dwell stats.
+-- Apply before/with the track.js + Base.astro + insights.js deploy. Re-running
+-- is harmless (IF NOT EXISTS).
+CREATE TABLE IF NOT EXISTS downloads (
+  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts      INTEGER NOT NULL,
+  path    TEXT    NOT NULL,
+  city    TEXT,
+  region  TEXT,
+  country TEXT,
+  lat     REAL,
+  lng     REAL,
+  asn     INTEGER,
+  org     TEXT,
+  ref     TEXT,
+  vid     TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_downloads_ts   ON downloads(ts);
+CREATE INDEX IF NOT EXISTS idx_downloads_vid  ON downloads(vid);
+CREATE INDEX IF NOT EXISTS idx_downloads_path ON downloads(path);
+
 -- The site wasn't public before bot-filtering was added, so the pre-launch rows
 -- are all crawlers/scanners. To start clean, also run:
 --   npx wrangler d1 execute site-analytics --remote --command "DELETE FROM pageviews;"
