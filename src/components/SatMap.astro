@@ -102,6 +102,29 @@ const satCount = 20;
     'https://services.arcgisonline.com',
   ];
 
+  // The heavy subresources the globe iframe pulls. Prefetching them into the
+  // HTTP cache while the browser is idle means that by the time the iframe
+  // mounts, Cesium + satellite.js load from cache instead of over the network,
+  // which is the bulk of the perceived load time. (Cache is partitioned by the
+  // top-level site, so the iframe reuses these same-site prefetches.)
+  const PREFETCH = [
+    '/satmap.html',
+    'https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Cesium.js',
+    'https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Widgets/widgets.css',
+    'https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.min.js',
+  ];
+
+  // Inject a <link> once, deduping by rel+href so repeated page-loads (via
+  // ClientRouter) never pile up duplicates in <head>.
+  function addLink(rel: string, href: string, crossOrigin = false) {
+    if (document.head.querySelector('link[rel="' + rel + '"][href="' + href + '"]')) return;
+    const l = document.createElement('link');
+    l.rel = rel;
+    l.href = href;
+    if (crossOrigin) l.crossOrigin = '';
+    document.head.appendChild(l);
+  }
+
   // Re-init on every page view so the globe still lazy-loads when this section
   // arrives via a client-side navigation (ClientRouter), not just a full load.
   function initSatMap() {
@@ -110,19 +133,22 @@ const satCount = 20;
     const fsBtn = document.getElementById('satmap-fs') as HTMLButtonElement | null;
     if (!shell || !loading || !fsBtn) return;
 
+    // Warm the CDN/data-host connections right away (DNS + TLS during the time
+    // the visitor is reading the top of the page), then prefetch the heavy
+    // globe assets when the main thread goes idle so they never block the
+    // homepage's own critical resources.
+    for (const origin of ORIGINS) addLink('preconnect', origin, true);
+    const prefetchAll = () => { for (const href of PREFETCH) addLink('prefetch', href); };
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(prefetchAll, { timeout: 3000 });
+    } else {
+      setTimeout(prefetchAll, 1200);
+    }
+
     let loaded = false;
     function loadGlobe() {
       if (loaded) return;
       loaded = true;
-
-      // open connections to the CDNs/data hosts a touch earlier
-      for (const origin of ORIGINS) {
-        const l = document.createElement('link');
-        l.rel = 'preconnect';
-        l.href = origin;
-        l.crossOrigin = '';
-        document.head.appendChild(l);
-      }
 
       const iframe = document.createElement('iframe');
       iframe.src = '/satmap.html';
@@ -149,7 +175,7 @@ const satCount = 20;
             io.disconnect();
           }
         },
-        { rootMargin: '300px' },
+        { rootMargin: '600px' },
       );
       io.observe(shell);
     } else {
