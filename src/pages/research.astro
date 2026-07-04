@@ -280,12 +280,12 @@ const sections = [
                 {c.venue && <> <span class="cite-venue">{c.venue}.</span></>}
               </p>
               <p class="cite-meta">
-                {c.award && <span class="badge badge-award">★ {c.award}</span>}
-                {c.note && <span class="badge">{c.note}</span>}
                 {c.links && c.links.map((l: any) => (
                   <a class="cite-link" href={l.href} target="_blank" rel="noopener">{l.label} ↗</a>
                 ))}
                 {c.post && <a class="cite-link cite-post" href={c.post}>Project Page →</a>}
+                {c.award && <span class="badge badge-award">★ {c.award}</span>}
+                {c.note && <span class="badge badge-award">★ {c.note}</span>}
               </p>
             </li>
           ))}
