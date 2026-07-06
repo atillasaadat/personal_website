@@ -192,13 +192,28 @@ function fileLabel(p) {
   return esc(s.split('/').filter(Boolean).pop() || s || '?');
 }
 
-function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur, downloads, downloadTotal }) {
+function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur, downloads, downloadTotal }) {
   const today = ymd(Date.now(), tz);
+
+  // Preserve the bot toggle (data=all) across range tabs, the date form, and the
+  // toggle links themselves. Engaged is the default, so it needs no param.
+  const modeQ = engagedOnly ? '' : '&data=all';
+  const rangeBase = range
+    ? `range=${range}`
+    : `from=${encodeURIComponent(fromStr)}&to=${encodeURIComponent(toStr)}`;
 
   const tabs = RANGES.map(
     ([key, lbl]) =>
-      `<a class="tab${key === range ? ' active' : ''}" href="?range=${key}">${lbl}</a>`,
+      `<a class="tab${key === range ? ' active' : ''}" href="?range=${key}${modeQ}">${lbl}</a>`,
   ).join('');
+
+  // Segmented control: filter the whole dashboard to engaged visitors (bots
+  // excluded) or show all recorded traffic. Each side shows its own view count.
+  const botSwitch =
+    `<div class="botswitch" role="group" aria-label="Bot filter">
+      <a class="seg${engagedOnly ? ' active' : ''}" href="?${rangeBase}"${engagedOnly ? ' aria-current="true"' : ''}>Exclude bots <span class="c">${modeCounts.engViews}</span></a>
+      <a class="seg${engagedOnly ? '' : ' active'}" href="?${rangeBase}&data=all"${engagedOnly ? '' : ' aria-current="true"'}>All traffic <span class="c">${modeCounts.rawViews}</span></a>
+    </div>`;
 
   const geoRows = geo.length
     ? geo
@@ -365,7 +380,15 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
   .card .l { color:#aab8d4; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.07em; }
   .card.engaged { border-color:rgba(94,234,212,0.4); background:rgba(94,234,212,0.07); }
   .card.engaged .n { color:#5eead4; }
-  .card .l .raw { color:#7f8db0; font-size:0.9em; text-transform:none; letter-spacing:0; opacity:0.8; }
+  .botrow { gap:0.75rem; margin-top:-0.75rem; }
+  .botswitch { display:inline-flex; border:1px solid rgba(126,168,255,0.2); border-radius:999px; overflow:hidden; }
+  .botswitch .seg { padding:0.4rem 0.9rem; color:#aab8d4; text-decoration:none; font-size:0.82rem;
+                    display:inline-flex; align-items:center; gap:0.4rem; }
+  .botswitch .seg + .seg { border-left:1px solid rgba(126,168,255,0.2); }
+  .botswitch .seg:hover { color:#5eead4; }
+  .botswitch .seg.active { background:rgba(94,234,212,0.14); color:#5eead4; }
+  .botswitch .seg .c { font-variant-numeric:tabular-nums; font-size:0.9em; opacity:0.7; }
+  .botnote { color:#7f8db0; font-size:0.78rem; flex:1 1 260px; min-width:0; }
   h2 { font-size:1rem; margin:2rem 0 0.6rem; color:#aab8d4; }
   h2 .hint { text-transform:none; letter-spacing:0; font-size:0.78rem; color:#7f8db0; font-weight:400; }
   .maphead { display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem; }
@@ -424,22 +447,27 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
 </style>
 </head><body><div class="wrap">
   <h1>Visitor Insights</h1>
-  <p class="sub">atillasaadat.com &middot; ${esc(label)} &middot; times in ${esc(tz)}</p>
+  <p class="sub">atillasaadat.com &middot; ${esc(label)} &middot; ${engagedOnly ? 'excluding likely bots' : 'all recorded traffic'} &middot; times in ${esc(tz)}</p>
   <div class="controls">
     <div class="tabs">${tabs}</div>
     <button type="button" class="refresh" id="refresh-btn" title="Reload the data without refreshing the whole page"><span class="ic">&#x21bb;</span> Refresh</button>
     <span class="refresh-status" id="refresh-status"></span>
     <form class="daterange" method="get">
+      ${engagedOnly ? '' : '<input type="hidden" name="data" value="all" />'}
       <label>From <input type="date" name="from" value="${esc(fromStr)}" max="${today}" /></label>
       <label>To <input type="date" name="to" value="${esc(toStr)}" max="${today}" /></label>
       <button type="submit">Apply</button>
     </form>
   </div>
+  <div class="controls botrow">
+    ${botSwitch}
+    <span class="botnote">${engagedOnly
+      ? 'Showing engaged visitors only: viewed more than one page or spent measurable time on a page. Single-page, zero-dwell hits (almost all bots) are hidden.'
+      : 'Showing all recorded traffic, including likely bots that pass header checks (residential-proxy / headless clusters).'}</span>
+  </div>
   <div class="cards">
-    <div class="card"><div class="n">${totals.visitors}</div><div class="l">Unique visitors <span class="raw">raw</span></div></div>
-    <div class="card"><div class="n">${totals.views}</div><div class="l">Page views <span class="raw">raw</span></div></div>
-    <div class="card engaged" title="Visitors who viewed more than one page or registered active time on a page. Single-page, zero-dwell hits (almost all bots) are excluded."><div class="n">${totals.engagedVisitors ?? 0}</div><div class="l">Engaged visitors</div></div>
-    <div class="card engaged" title="Page views from engaged visitors only, with the single-page zero-dwell bot hits removed."><div class="n">${totals.engagedViews ?? 0}</div><div class="l">Engaged views</div></div>
+    <div class="card${engagedOnly ? ' engaged' : ''}"><div class="n">${totals.visitors}</div><div class="l">${engagedOnly ? 'Engaged visitors' : 'Unique visitors'}</div></div>
+    <div class="card${engagedOnly ? ' engaged' : ''}"><div class="n">${totals.views}</div><div class="l">${engagedOnly ? 'Engaged views' : 'Page views'}</div></div>
     <div class="card"><div class="n">${fmtDur(dwell.avgVisit) || '&middot;'}</div><div class="l">Avg. time on site</div></div>
     <div class="card"><div class="n">${fmtDur(dwell.avgPage) || '&middot;'}</div><div class="l">Avg. time per page</div></div>
     <div class="card"><div class="n">${downloadTotal.total || 0}</div><div class="l">CV downloads</div></div>
@@ -903,6 +931,13 @@ export async function onRequestGet({ request, env }) {
     }
   }
 
+  // Bot toggle. "engaged" (default) restricts every pageview query to visitors
+  // who viewed >1 page or registered active dwell time — the behavioral signal
+  // the residential-proxy / headless bot clusters all fail. "all" shows the raw
+  // recorded traffic. modeCounts holds both view counts for the toggle labels.
+  const engagedOnly = (url.searchParams.get('data') || 'engaged') !== 'all';
+  let modeCounts = { rawViews: 0, engViews: 0 };
+
   const empty = { visitors: 0, views: 0, pages: 0, countries: 0 };
   const render = (
     totals, geo, topPages, countries, regions, cities, orgs, refs, sources,
@@ -910,7 +945,7 @@ export async function onRequestGet({ request, env }) {
     downloads = [], downloadTotal = { total: 0, visitors: 0 },
   ) =>
     new Response(
-      page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur, downloads, downloadTotal }),
+      page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur, downloads, downloadTotal }),
       {
         headers: {
           ...SECURITY_HEADERS,
@@ -923,53 +958,63 @@ export async function onRequestGet({ request, env }) {
   if (!db) return render(empty, [], [], [], [], [], [], [], []);
 
   try {
+    // SQL fragment (+ its bind args) that restricts a pageview query to engaged
+    // visitors when the toggle is on. Appended right after each query's
+    // `ts >= ? AND ts < ?` so its two placeholders bind last. Empty in "all"
+    // mode. The engaged-visitor set is defined once here, in the subquery.
+    const eng = engagedOnly
+      ? ` AND vid IN (
+             SELECT vid FROM pageviews WHERE ts >= ? AND ts < ?
+             GROUP BY vid
+             HAVING COUNT(*) > 1
+                OR MAX(CASE WHEN dur IS NOT NULL AND dur > 0 THEN 1 ELSE 0 END) = 1)`
+      : '';
+    const engArgs = engagedOnly ? [start, end] : [];
+
     const totals =
       (await db
         .prepare(
           `SELECT COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors,
                   COUNT(DISTINCT path) AS pages,
                   COUNT(DISTINCT CASE WHEN country != '' THEN country END) AS countries
-           FROM pageviews WHERE ts >= ? AND ts < ?`,
+           FROM pageviews WHERE ts >= ? AND ts < ?${eng}`,
         )
-        .bind(start, end)
+        .bind(start, end, ...engArgs)
         .first()) || empty;
 
-    // "Engaged" totals: the bot clusters that slip past the beacon filter (real
-    // Mozilla UA, Accept-Language, Sec-Fetch, residential/business ASN) share a
-    // behavioral fingerprint: a fresh cookie every hit, only ever the homepage,
-    // and no dwell beacon. So count a visitor as engaged only if they viewed
-    // more than one page OR registered active time on some page, and report
-    // engaged views/visitors alongside the raw counts. `dur` is a later
-    // migration, so degrade silently (cards fall back to the raw feel) if it's
-    // absent. Kept next to the raw totals rather than replacing them so the
-    // difference is visible.
+    // Raw vs engaged view counts for the toggle labels, both always computed so
+    // each pill shows its size. `dur` is a later migration; if the engaged
+    // subquery can't run, fall back to the raw count so the toggle still works.
     try {
-      const eng = await db
+      const raw = await db
+        .prepare(`SELECT COUNT(*) AS views FROM pageviews WHERE ts >= ? AND ts < ?`)
+        .bind(start, end)
+        .first();
+      modeCounts.rawViews = (raw && raw.views) || 0;
+      const e = await db
         .prepare(
-          `SELECT COUNT(*) AS visitors, COALESCE(SUM(cnt), 0) AS views FROM (
-             SELECT vid, COUNT(*) AS cnt,
-                    MAX(CASE WHEN dur IS NOT NULL AND dur > 0 THEN 1 ELSE 0 END) AS dwelled
+          `SELECT COALESCE(SUM(cnt), 0) AS views FROM (
+             SELECT vid, COUNT(*) AS cnt
              FROM pageviews WHERE ts >= ? AND ts < ?
              GROUP BY vid
-             HAVING cnt > 1 OR dwelled = 1)`,
+             HAVING COUNT(*) > 1
+                OR MAX(CASE WHEN dur IS NOT NULL AND dur > 0 THEN 1 ELSE 0 END) = 1)`,
         )
         .bind(start, end)
         .first();
-      if (eng) {
-        totals.engagedVisitors = eng.visitors;
-        totals.engagedViews = eng.views;
-      }
+      modeCounts.engViews = (e && e.views) || 0;
     } catch (e) {
-      // dur column missing: skip the engaged split, leave raw totals only
+      modeCounts.rawViews = totals.views;
+      modeCounts.engViews = totals.views;
     }
 
     const geo = await db
       .prepare(
         `SELECT country, region, city, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
-         FROM pageviews WHERE ts >= ? AND ts < ?
+         FROM pageviews WHERE ts >= ? AND ts < ?${eng}
          GROUP BY country, region, city ORDER BY views DESC LIMIT 500`,
       )
-      .bind(start, end)
+      .bind(start, end, ...engArgs)
       .all();
 
     // Country choropleth values, keyed by ISO-2 country code on the client.
@@ -977,19 +1022,19 @@ export async function onRequestGet({ request, env }) {
       .prepare(
         `SELECT country, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
          FROM pageviews
-         WHERE ts >= ? AND ts < ? AND country IS NOT NULL AND country != ''
+         WHERE ts >= ? AND ts < ?${eng} AND country IS NOT NULL AND country != ''
          GROUP BY country ORDER BY visitors DESC LIMIT 300`,
       )
-      .bind(start, end)
+      .bind(start, end, ...engArgs)
       .all();
 
     const pages = await db
       .prepare(
         `SELECT path, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
-         FROM pageviews WHERE ts >= ? AND ts < ?
+         FROM pageviews WHERE ts >= ? AND ts < ?${eng}
          GROUP BY path ORDER BY views DESC LIMIT 100`,
       )
-      .bind(start, end)
+      .bind(start, end, ...engArgs)
       .all();
 
     // Region choropleth values, keyed by "<ISO-2>|<region name>" on the client.
@@ -997,10 +1042,10 @@ export async function onRequestGet({ request, env }) {
       .prepare(
         `SELECT region, country, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
          FROM pageviews
-         WHERE ts >= ? AND ts < ? AND region IS NOT NULL AND region != ''
+         WHERE ts >= ? AND ts < ?${eng} AND region IS NOT NULL AND region != ''
          GROUP BY country, region ORDER BY visitors DESC LIMIT 800`,
       )
-      .bind(start, end)
+      .bind(start, end, ...engArgs)
       .all();
 
     const cities = await db
@@ -1008,10 +1053,10 @@ export async function onRequestGet({ request, env }) {
         `SELECT city, region, country, AVG(lat) AS lat, AVG(lng) AS lng,
                 COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
          FROM pageviews
-         WHERE ts >= ? AND ts < ? AND lat IS NOT NULL AND city IS NOT NULL AND city != ''
+         WHERE ts >= ? AND ts < ?${eng} AND lat IS NOT NULL AND city IS NOT NULL AND city != ''
          GROUP BY country, region, city ORDER BY visitors DESC LIMIT 1000`,
       )
-      .bind(start, end)
+      .bind(start, end, ...engArgs)
       .all();
 
     // Network org & referrer queries reference columns added in a later
@@ -1024,10 +1069,10 @@ export async function onRequestGet({ request, env }) {
       const o = await db
         .prepare(
           `SELECT org, country, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
-           FROM pageviews WHERE ts >= ? AND ts < ? AND org IS NOT NULL AND org != ''
+           FROM pageviews WHERE ts >= ? AND ts < ?${eng} AND org IS NOT NULL AND org != ''
            GROUP BY org, country ORDER BY visitors DESC, views DESC LIMIT 300`,
         )
-        .bind(start, end)
+        .bind(start, end, ...engArgs)
         .all();
       orgs = o.results || [];
     } catch (e) {
@@ -1037,10 +1082,10 @@ export async function onRequestGet({ request, env }) {
       const r = await db
         .prepare(
           `SELECT ref, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
-           FROM pageviews WHERE ts >= ? AND ts < ?
+           FROM pageviews WHERE ts >= ? AND ts < ?${eng}
            GROUP BY ref ORDER BY (ref IS NULL), visitors DESC, views DESC LIMIT 100`,
         )
-        .bind(start, end)
+        .bind(start, end, ...engArgs)
         .all();
       refs = r.results || [];
     } catch (e) {
@@ -1050,10 +1095,10 @@ export async function onRequestGet({ request, env }) {
       const s = await db
         .prepare(
           `SELECT source, COUNT(*) AS views, COUNT(DISTINCT vid) AS visitors
-           FROM pageviews WHERE ts >= ? AND ts < ? AND source IS NOT NULL AND source != ''
+           FROM pageviews WHERE ts >= ? AND ts < ?${eng} AND source IS NOT NULL AND source != ''
            GROUP BY source ORDER BY visitors DESC, views DESC LIMIT 100`,
         )
-        .bind(start, end)
+        .bind(start, end, ...engArgs)
         .all();
       sources = s.results || [];
     } catch (e) {
