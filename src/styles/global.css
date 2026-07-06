@@ -87,9 +87,14 @@ body {
   overflow-x: hidden;
 }
 
-/* Light theme: the animated starfield is a dark-space canvas, so swap it for a
-   soft daylit sky-glow on the body itself. */
-:root[data-theme='light'] #starfield { display: none; }
+/* Light theme: the fixed canvas stays visible and renders a daylit solar system
+   (corner sun + planets on concentric orbits), so give it a soft daytime sky
+   wash (retinted through the light palette) instead of the dark-space gradient. */
+:root[data-theme='light'] #starfield {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, var(--sky-glow), transparent),
+    var(--bg-0);
+}
 :root[data-theme='light'] body {
   background:
     radial-gradient(ellipse 80% 50% at 50% -10%, var(--sky-glow), transparent),

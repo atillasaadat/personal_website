@@ -1,8 +1,14 @@
 ---
-// Fixed-position animated starfield: drifting + twinkling stars in two parallax
-// depth layers, with the occasional shooting star and a slow orbiting satellite
-// tracking across the sky. Pure vanilla JS, pauses when the tab is hidden, and
-// falls back to a static field for reduced-motion users.
+// Fixed-position animated background that adapts to the theme:
+//   Dark  -> a night sky: drifting + twinkling stars in two parallax depth
+//            layers, occasional shooting stars, and slow orbiting satellite
+//            formations tracking across the sky.
+//   Light -> a daylit solar system: a soft sun anchored in the top-right corner
+//            with the eight planets (to rough scale, in order, each with its own
+//            size/colour, Saturn ringed) plus the asteroid belt drifting along
+//            concentric orbits that fan out toward the bottom-left.
+// Pure vanilla JS, pauses when the tab is hidden, and falls back to a static
+// frame for reduced-motion users.
 ---
 <canvas id="starfield" aria-hidden="true" transition:persist="starfield"></canvas>
 
@@ -28,11 +34,65 @@
   type Star = { x: number; y: number; r: number; v: number; tw: number; tws: number };
   type Shooter = { x: number; y: number; vx: number; vy: number; life: number; len: number };
   type Sat = { x: number; y: number; vx: number; vy: number; blink: number };
+  type Planet = { orbitR: number; theta: number; omega: number; r: number; hi: string; lo: string; ring: boolean };
+  type Asteroid = { orbitR: number; theta: number; omega: number; r: number; alpha: number };
 
   let stars: Star[] = [];
   let shooters: Shooter[] = [];
   let sats: Sat[] = [];
+  let planets: Planet[] = [];
+  let asteroids: Asteroid[] = [];
   let w = 0, h = 0, raf = 0, last = 0, nextShoot = 0, nextSat = 0;
+  let sx = 0, sy = 0;   // sun position (light theme, top-right corner)
+
+  const isLight = () => document.documentElement.dataset.theme === 'light';
+
+  // Solar system for the light theme, in order out from the sun. `au` is the
+  // real mean orbital radius (mapped to screen with a sqrt compression so all
+  // eight fit); `r` is the on-screen body size (compressed but order-preserving,
+  // gas giants clearly larger); `hi`/`lo` are the lit-side and shadow tints that
+  // give each planet its characteristic colour.
+  const PLANET_DATA: { au: number; r: number; hi: string; lo: string; ring?: boolean }[] = [
+    { au: 0.39, r: 1.7, hi: '206,201,191', lo: '120,112,102' },              // Mercury
+    { au: 0.72, r: 2.6, hi: '245,226,176', lo: '188,150,86'  },              // Venus
+    { au: 1.00, r: 2.8, hi: '128,186,238', lo: '36,84,150'   },              // Earth
+    { au: 1.52, r: 2.1, hi: '226,138,92',  lo: '146,66,42'   },              // Mars
+    { au: 5.20, r: 6.2, hi: '226,201,166', lo: '150,112,78'  },              // Jupiter
+    { au: 9.54, r: 5.4, hi: '235,215,164', lo: '176,146,92', ring: true },   // Saturn
+    { au: 19.2, r: 3.7, hi: '196,232,236', lo: '108,176,188' },              // Uranus
+    { au: 30.1, r: 3.6, hi: '112,142,226', lo: '44,70,158'   },              // Neptune
+  ];
+
+  function buildSolarSystem() {
+    const diag = Math.hypot(w, h);
+    const rMin = diag * 0.11, rMax = diag * 0.98;   // Mercury near the corner, Neptune to the far corner
+    const sq = PLANET_DATA.map((p) => Math.sqrt(p.au));
+    const sMin = sq[0], sMax = sq[sq.length - 1];
+    const auToR = (au: number) => rMin + (rMax - rMin) * (Math.sqrt(au) - sMin) / (sMax - sMin);
+    planets = PLANET_DATA.map((p) => ({
+      orbitR: auToR(p.au),
+      theta: Math.PI * 0.5 + Math.random() * Math.PI * 0.5,   // start in the visible lower-left sweep
+      omega: 0.00045 / Math.sqrt(p.au),                       // inner planets sweep faster (compressed Kepler)
+      r: p.r,
+      hi: p.hi,
+      lo: p.lo,
+      ring: !!p.ring,
+    }));
+
+    // Asteroid belt: a scatter of rocks orbiting between Mars (1.52 AU) and
+    // Jupiter (5.2 AU), spread over a wide ~2.0 to 3.4 AU band.
+    const beltCount = Math.round(Math.min(300, Math.max(140, (w * h) / 8000)));
+    asteroids = Array.from({ length: beltCount }, () => {
+      const au = 2.0 + Math.random() * 1.4;
+      return {
+        orbitR: auToR(au) + (Math.random() - 0.5) * 16,   // radial jitter thickens the belt
+        theta: Math.random() * Math.PI * 2,
+        omega: 0.00045 / Math.sqrt(au),
+        r: 0.7 + Math.pow(Math.random(), 1.7) * 2.6,       // mostly small, a few chunky rocks
+        alpha: 0.4 + Math.random() * 0.4,
+      };
+    });
+  }
 
   function resize() {
     // Decorative background: render at 1x device pixels. On HiDPI/Retina this
@@ -55,6 +115,11 @@
         tws: 0.6 + Math.random() * 1.6,       // per-star twinkle speed
       };
     });
+    // Sun anchored in the top-right corner; the solar-system orbits fan out
+    // from it toward the bottom-left, keeping the page's reading area clear.
+    sx = w * 0.985;
+    sy = h * 0.04;
+    buildSolarSystem();
   }
 
   function spawnShooter() {
@@ -119,11 +184,8 @@
     }
   }
 
-  function frame(t: number) {
-    const dt = Math.min(2.5, (t - last) / 16.67) || 1; // frames elapsed (caps after tab switch)
-    last = t;
-    ctx.clearRect(0, 0, w, h);
-
+  // ---- Night sky (dark theme) ----
+  function renderNight(t: number, dt: number) {
     // stars
     for (const s of stars) {
       s.y -= s.v * dt;
@@ -203,23 +265,121 @@
       ctx.fillStyle = `rgba(228, 240, 255, ${pulse})`;
       ctx.fill();
     }
+  }
 
+  // ---- Daylit solar system (light theme): corner sun + planets to rough scale ----
+  function drawSun() {
+    // soft warm glow radiating from the corner across the page
+    const glowR = Math.min(w, h) * 0.5;
+    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, glowR);
+    g.addColorStop(0, 'rgba(255, 214, 150, 0.55)');
+    g.addColorStop(0.28, 'rgba(252, 196, 110, 0.2)');
+    g.addColorStop(1, 'rgba(252, 196, 110, 0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    // bright core tucked in the corner
+    const core = Math.max(9, Math.min(w, h) * 0.02);
+    const cg = ctx.createRadialGradient(sx, sy, 0, sx, sy, core);
+    cg.addColorStop(0, 'rgba(255, 244, 214, 0.95)');
+    cg.addColorStop(1, 'rgba(255, 196, 104, 0.85)');
+    ctx.fillStyle = cg;
+    ctx.beginPath();
+    ctx.arc(sx, sy, core, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawOrbit(p: Planet) {
+    ctx.strokeStyle = 'rgba(52, 74, 120, 0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(sx, sy, p.orbitR, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  function drawAsteroid(a: Asteroid) {
+    const ax = sx + a.orbitR * Math.cos(a.theta);
+    const ay = sy + a.orbitR * Math.sin(a.theta);
+    if (ax < -10 || ax > w + 10 || ay < -10 || ay > h + 10) return;   // off-screen, skip
+    ctx.beginPath();
+    ctx.arc(ax, ay, a.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(104, 90, 74, ${a.alpha})`;
+    ctx.fill();
+  }
+
+  function drawPlanet(p: Planet) {
+    const px = sx + p.orbitR * Math.cos(p.theta);
+    const py = sy + p.orbitR * Math.sin(p.theta);
+    if (px < -30 || px > w + 30 || py < -30 || py > h + 30) return;   // off-screen, skip
+    // Saturn's rings, drawn tilted around the body
+    if (p.ring) {
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(-0.42);
+      ctx.strokeStyle = `rgba(${p.hi}, 0.55)`;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, p.r * 2.2, p.r * 0.78, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // body shaded from the lit side (toward the sun) to the shadow side, so it
+    // reads as a little sphere rather than a flat dot
+    const dx = sx - px, dy = sy - py, d = Math.hypot(dx, dy) || 1;
+    const lx = px + (dx / d) * p.r * 0.5, ly = py + (dy / d) * p.r * 0.5;
+    const g = ctx.createRadialGradient(lx, ly, p.r * 0.15, px, py, p.r * 1.05);
+    g.addColorStop(0, `rgba(${p.hi}, 1)`);
+    g.addColorStop(1, `rgba(${p.lo}, 1)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(px, py, p.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function renderDay(t: number, dt: number) {
+    drawSun();
+    for (const p of planets) drawOrbit(p);       // all orbit rings under the planets
+    for (const a of asteroids) {
+      a.theta += a.omega * dt;
+      if (a.theta > Math.PI * 2) a.theta -= Math.PI * 2;
+      drawAsteroid(a);
+    }
+    for (const p of planets) {
+      p.theta += p.omega * dt;
+      if (p.theta > Math.PI * 2) p.theta -= Math.PI * 2;
+      drawPlanet(p);
+    }
+  }
+
+  // ============================================================
+  //   Loop + static fallback
+  // ============================================================
+  function frame(t: number) {
+    const dt = Math.min(2.5, (t - last) / 16.67) || 1; // frames elapsed (caps after tab switch)
+    last = t;
+    ctx.clearRect(0, 0, w, h);
+    if (isLight()) renderDay(t, dt); else renderNight(t, dt);
     raf = requestAnimationFrame(frame);
   }
 
   function drawStatic() {
     ctx.clearRect(0, 0, w, h);
-    for (const s of stars) {
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(200, 220, 255, 0.55)';
-      ctx.fill();
+    if (isLight()) {
+      drawSun();
+      for (const p of planets) drawOrbit(p);
+      for (const a of asteroids) drawAsteroid(a);
+      for (const p of planets) drawPlanet(p);
+    } else {
+      for (const s of stars) {
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(200, 220, 255, 0.55)';
+        ctx.fill();
+      }
     }
   }
 
-  const isLight = () => document.documentElement.dataset.theme === 'light';
   function start() {
-    if (reduced || isLight() || raf) return;
+    if (reduced || raf) return;
     last = 0;
     raf = requestAnimationFrame(frame);
   }
@@ -235,7 +395,9 @@
   } else {
     start();
     document.addEventListener('visibilitychange', () => (document.hidden ? pause() : start()));
-    // The light theme hides the canvas; stop animating to save CPU, resume on dark.
-    document.addEventListener('themechange', () => (isLight() ? pause() : start()));
+    // Both themes animate now (night starfield / daytime orrery); the loop
+    // dispatches per-frame by theme, so a theme change just needs a static
+    // redraw for reduced-motion users, otherwise the running loop handles it.
+    document.addEventListener('themechange', () => { if (reduced) drawStatic(); else start(); });
   }
 </script>
