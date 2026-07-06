@@ -14,15 +14,19 @@ const PIXEL = Uint8Array.from([
 // Known bot / automation / preview / monitoring user-agent signatures.
 const BOT_UA = /bot|crawl|spider|slurp|bingpreview|mediapartners|facebookexternalhit|embedly|quora|pinterest|slackbot|telegrambot|whatsapp|discordbot|twitterbot|linkedinbot|redditbot|applebot|petalbot|yandex|baidu|sogou|semrush|ahrefs|mj12|dotbot|dataforseo|bytespider|gptbot|claudebot|ccbot|perplexity|amazonbot|headless|phantomjs|puppeteer|playwright|selenium|lighthouse|chrome-lighthouse|pagespeed|gtmetrix|pingdom|uptime|statuscake|monitor|newrelic|datadog|curl|wget|python-requests|python-urllib|java\/|go-http|node-fetch|axios|got\s|httpx|okhttp|scrapy|libwww|cf-/i;
 
-// Pure datacenter / hosting / VPS networks. Real visitors browse from
-// residential, mobile, corporate, or campus ISPs, never from these networks,
-// so traffic whose Cloudflare-reported network org matches is almost certainly
-// an automated scraper (the kind that spoofs a browser UA and Sec-Fetch). The
-// big clouds (AWS / GCP / Azure / Oracle) are deliberately NOT listed: a real
-// employer at a tech company can egress through them, and a few crawler hits
-// from those are preferable to dropping a genuine visit. Those still get
+// Pure datacenter / hosting / VPS / residential-proxy / VPN networks. Real
+// visitors browse from residential, mobile, corporate, or campus ISPs, never
+// from these networks, so traffic whose Cloudflare-reported network org matches
+// is almost certainly an automated scraper (the kind that spoofs a browser UA
+// and Sec-Fetch). This includes the residential-proxy and scraping-as-a-service
+// vendors (Bright Data, Oxylabs/code200, Smartproxy, HostRoyale, GSL, the
+// "COLLYER QUAY" / "VPN Consumer ..." exit labels, "IDC & Cloud service", etc.)
+// that were observed slipping through with real-looking headers.
+// The big clouds (AWS / GCP / Azure / Oracle) are deliberately NOT listed: a
+// real employer at a tech company can egress through them, and a few crawler
+// hits from those are preferable to dropping a genuine visit. Those still get
 // recorded, with their org shown on the dashboard so they can be judged.
-const HOSTING_ORG = /digitalocean|ovh|hetzner|linode|akamai|fastly|vultr|contabo|scaleway|leaseweb|\bm247\b|choopa|psychz|hostwinds|datacamp|colocrossing|quadranet|hostinger|namecheap|godaddy|bluehost|dreamhost|ionos|1&1|gigenet|sharktech|incero|servermania|hostkey|servers\.com|serverius|worldstream|poneytelecom|online s\.?a\.?s|netcup|time4vps|hostpapa|webhosting|hosting solutions|data ?cent(er|re)|dedicated server|virtual server|\bvps\b|colocation|cloud server/i;
+const HOSTING_ORG = /digitalocean|ovh|hetzner|linode|akamai|fastly|vultr|contabo|scaleway|leaseweb|\bm247\b|choopa|psychz|hostwinds|datacamp|colocrossing|quadranet|hostinger|namecheap|godaddy|bluehost|dreamhost|ionos|1&1|gigenet|sharktech|incero|servermania|hostkey|servers\.com|serverius|worldstream|poneytelecom|online s\.?a\.?s|netcup|time4vps|hostpapa|webhosting|hosting solutions|bright ?data|oxylabs|code200|smartproxy|packethub|oculus networks|hostroyale|gsl networks|hurricane electric|cogent|zayo|arelion|collyer quay|\bidc\b|cloud service|\bproxy\b|\bvpn\b|data ?cent(er|re)|dedicated server|virtual server|\bvps\b|colocation|cloud server/i;
 
 // Decide whether a request to the beacon looks like a real human browser.
 // Conservative: when in doubt about a *modern* signal, treat as bot.

@@ -363,6 +363,9 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
           border-radius:2px; box-shadow:0 0 0 1px rgba(126,168,255,0.18); }
   .card .n { font-size:1.7rem; font-weight:700; font-variant-numeric:tabular-nums; }
   .card .l { color:#aab8d4; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.07em; }
+  .card.engaged { border-color:rgba(94,234,212,0.4); background:rgba(94,234,212,0.07); }
+  .card.engaged .n { color:#5eead4; }
+  .card .l .raw { color:#7f8db0; font-size:0.9em; text-transform:none; letter-spacing:0; opacity:0.8; }
   h2 { font-size:1rem; margin:2rem 0 0.6rem; color:#aab8d4; }
   h2 .hint { text-transform:none; letter-spacing:0; font-size:0.78rem; color:#7f8db0; font-weight:400; }
   .maphead { display:flex; flex-wrap:wrap; align-items:center; gap:0.75rem; }
@@ -433,8 +436,10 @@ function page({ range, fromStr, toStr, label, tz, totals, geo, topPages, countri
     </form>
   </div>
   <div class="cards">
-    <div class="card"><div class="n">${totals.visitors}</div><div class="l">Unique visitors</div></div>
-    <div class="card"><div class="n">${totals.views}</div><div class="l">Page views</div></div>
+    <div class="card"><div class="n">${totals.visitors}</div><div class="l">Unique visitors <span class="raw">raw</span></div></div>
+    <div class="card"><div class="n">${totals.views}</div><div class="l">Page views <span class="raw">raw</span></div></div>
+    <div class="card engaged" title="Visitors who viewed more than one page or registered active time on a page. Single-page, zero-dwell hits (almost all bots) are excluded."><div class="n">${totals.engagedVisitors ?? 0}</div><div class="l">Engaged visitors</div></div>
+    <div class="card engaged" title="Page views from engaged visitors only, with the single-page zero-dwell bot hits removed."><div class="n">${totals.engagedViews ?? 0}</div><div class="l">Engaged views</div></div>
     <div class="card"><div class="n">${fmtDur(dwell.avgVisit) || '&middot;'}</div><div class="l">Avg. time on site</div></div>
     <div class="card"><div class="n">${fmtDur(dwell.avgPage) || '&middot;'}</div><div class="l">Avg. time per page</div></div>
     <div class="card"><div class="n">${downloadTotal.total || 0}</div><div class="l">CV downloads</div></div>
@@ -928,6 +933,35 @@ export async function onRequestGet({ request, env }) {
         )
         .bind(start, end)
         .first()) || empty;
+
+    // "Engaged" totals: the bot clusters that slip past the beacon filter (real
+    // Mozilla UA, Accept-Language, Sec-Fetch, residential/business ASN) share a
+    // behavioral fingerprint: a fresh cookie every hit, only ever the homepage,
+    // and no dwell beacon. So count a visitor as engaged only if they viewed
+    // more than one page OR registered active time on some page, and report
+    // engaged views/visitors alongside the raw counts. `dur` is a later
+    // migration, so degrade silently (cards fall back to the raw feel) if it's
+    // absent. Kept next to the raw totals rather than replacing them so the
+    // difference is visible.
+    try {
+      const eng = await db
+        .prepare(
+          `SELECT COUNT(*) AS visitors, COALESCE(SUM(cnt), 0) AS views FROM (
+             SELECT vid, COUNT(*) AS cnt,
+                    MAX(CASE WHEN dur IS NOT NULL AND dur > 0 THEN 1 ELSE 0 END) AS dwelled
+             FROM pageviews WHERE ts >= ? AND ts < ?
+             GROUP BY vid
+             HAVING cnt > 1 OR dwelled = 1)`,
+        )
+        .bind(start, end)
+        .first();
+      if (eng) {
+        totals.engagedVisitors = eng.visitors;
+        totals.engagedViews = eng.views;
+      }
+    } catch (e) {
+      // dur column missing: skip the engaged split, leave raw totals only
+    }
 
     const geo = await db
       .prepare(
