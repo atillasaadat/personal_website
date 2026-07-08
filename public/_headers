@@ -8,3 +8,31 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
+
+# --- Static-asset caching (fixes "Add Expires headers") ---------------------
+# HTML is intentionally left uncached (Pages default: max-age=0, must-
+# revalidate) so content updates go live immediately. Only fingerprinted or
+# stable assets get long lifetimes below.
+
+# Astro build output: filenames are content-hashed, so a changed file always
+# gets a new URL. Safe to cache forever and skip revalidation.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Post/gallery images & videos. Stable paths; on the rare in-place replacement,
+# purge the Cloudflare cache. One month keeps repeat visits fast.
+/media/*
+  Cache-Control: public, max-age=2592000
+
+# Build-generated Open Graph social cards (regenerated per build, stable path).
+/og/*
+  Cache-Control: public, max-age=2592000
+
+# Favicon.
+/favicon.svg
+  Cache-Control: public, max-age=2592000
+
+# Downloadable documents (the CV PDF is replaced in place on updates, so keep a
+# short lifetime with revalidation rather than a far-future expiry).
+/files/*
+  Cache-Control: public, max-age=86400, must-revalidate
