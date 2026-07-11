@@ -140,6 +140,42 @@ export async function onRequestGet({ request, env }) {
     return new Response(PIXEL, { headers });
   }
 
+  // Outbound / CTA click event (?e=click): a click on the email (k=email), a
+  // social profile (k=social), or an external link (k=outbound). `t` is the
+  // destination (the email address or external host), `p` the page it happened
+  // on. Recorded in the `events` table with the same geo/network attribution, so
+  // the dashboard can attribute contact/social engagement to a visitor.
+  if (url.searchParams.get('e') === 'click') {
+    const kind = (url.searchParams.get('k') || '').replace(/[^a-z]/g, '').slice(0, 16) || 'outbound';
+    const target =
+      (url.searchParams.get('t') || '').replace(/[^\w.@:/\-]+/g, '').slice(0, 128) || null;
+    try {
+      if (env.DB) {
+        await env.DB.prepare(
+          'INSERT INTO events (ts, kind, target, path, city, region, country, lat, lng, asn, org, vid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        )
+          .bind(
+            Date.now(),
+            kind,
+            target,
+            path,
+            cf.city || null,
+            cf.region || null,
+            cf.country || null,
+            Number.isFinite(lat) ? lat : null,
+            Number.isFinite(lng) ? lng : null,
+            Number.isFinite(asn) ? asn : null,
+            cf.asOrganization || null,
+            vid,
+          )
+          .run();
+      }
+    } catch (e) {
+      // ignore: a failed analytics write must not affect the visitor
+    }
+    return new Response(PIXEL, { headers });
+  }
+
   // Optional ?source= tag from the landing link (e.g. ?source=CV). Visitor-
   // supplied, so strip to a sane charset, trim, and cap length.
   const source =
@@ -191,16 +227,29 @@ export async function onRequestPost({ request, env }) {
       return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
     }
     const pvid = (url.searchParams.get('i') || '').replace(/[^a-zA-Z0-9-]+/g, '').slice(0, 64);
-    let dur = parseInt(url.searchParams.get('d'), 10);
-    if (env.DB && pvid && Number.isFinite(dur) && dur > 0) {
-      if (dur > 7200000) dur = 7200000; // cap at 2h; ignore absurd values
+    if (env.DB && pvid) {
       const vid = (cookie.match(/(?:^|;\s*)vid=([^;]+)/) || [])[1] || null;
       if (vid) {
-        await env.DB.prepare(
-          'UPDATE pageviews SET dur = ? WHERE pvid = ? AND vid = ? AND (dur IS NULL OR dur < ?)',
-        )
-          .bind(dur, pvid, vid, dur)
-          .run();
+        // Active time on the page, ms. Kept as the max seen for the row.
+        let dur = parseInt(url.searchParams.get('d'), 10);
+        if (Number.isFinite(dur) && dur > 0) {
+          if (dur > 7200000) dur = 7200000; // cap at 2h; ignore absurd values
+          await env.DB.prepare(
+            'UPDATE pageviews SET dur = ? WHERE pvid = ? AND vid = ? AND (dur IS NULL OR dur < ?)',
+          )
+            .bind(dur, pvid, vid, dur)
+            .run();
+        }
+        // Max scroll depth reached, percent 0-100. Also kept as the max seen.
+        let sd = parseInt(url.searchParams.get('sd'), 10);
+        if (Number.isFinite(sd) && sd > 0) {
+          if (sd > 100) sd = 100;
+          await env.DB.prepare(
+            'UPDATE pageviews SET scroll = ? WHERE pvid = ? AND vid = ? AND (scroll IS NULL OR scroll < ?)',
+          )
+            .bind(sd, pvid, vid, sd)
+            .run();
+        }
       }
     }
   } catch (e) {

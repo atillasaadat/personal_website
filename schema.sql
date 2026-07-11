@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS pageviews (
   source  TEXT,               -- ?source= tag from the landing link (e.g. "CV")
   pvid    TEXT,               -- per-pageview id, links a view to its dwell report
   dur     INTEGER,            -- active time on the page, ms (filled on page leave)
+  scroll  INTEGER,            -- max scroll depth reached, percent 0-100 (page leave)
   vid     TEXT    NOT NULL    -- anonymous per-visitor id (cookie)
 );
 
@@ -54,3 +55,27 @@ CREATE TABLE IF NOT EXISTS downloads (
 CREATE INDEX IF NOT EXISTS idx_downloads_ts   ON downloads(ts);
 CREATE INDEX IF NOT EXISTS idx_downloads_vid  ON downloads(vid);
 CREATE INDEX IF NOT EXISTS idx_downloads_path ON downloads(path);
+
+-- Outbound / CTA clicks (email, social profiles, external links). Recorded by
+-- track.js with the same bot filtering + geo/network attribution as a pageview,
+-- keyed by vid so the dashboard can attribute a contact/social click to a
+-- visitor's session (a recruiter clicking the email is a near-conversion).
+CREATE TABLE IF NOT EXISTS events (
+  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts      INTEGER NOT NULL,   -- event time, unix milliseconds
+  kind    TEXT    NOT NULL,   -- 'email' | 'social' | 'outbound'
+  target  TEXT,               -- destination (the email address, or external host)
+  path    TEXT,               -- page the click happened on
+  city    TEXT,
+  region  TEXT,
+  country TEXT,
+  lat     REAL,
+  lng     REAL,
+  asn     INTEGER,
+  org     TEXT,               -- network organization / ISP (cf.asOrganization)
+  vid     TEXT    NOT NULL    -- anonymous per-visitor id (cookie)
+);
+
+CREATE INDEX IF NOT EXISTS idx_events_ts   ON events(ts);
+CREATE INDEX IF NOT EXISTS idx_events_vid  ON events(vid);
+CREATE INDEX IF NOT EXISTS idx_events_kind ON events(kind);

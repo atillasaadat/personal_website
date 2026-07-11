@@ -51,6 +51,33 @@ CREATE INDEX IF NOT EXISTS idx_downloads_ts   ON downloads(ts);
 CREATE INDEX IF NOT EXISTS idx_downloads_vid  ON downloads(vid);
 CREATE INDEX IF NOT EXISTS idx_downloads_path ON downloads(path);
 
+-- Migration: scroll-depth tracking + outbound/CTA click events. `scroll` is the
+-- max scroll percentage (0-100) reached on a page, reported by the same dwell
+-- beacon on page leave. The `events` table records clicks on the email, social
+-- profiles, and external links, keyed by vid for per-visitor attribution. Apply
+-- before/with the track.js + Base.astro + insights.js deploy. Re-runs are
+-- harmless (the ALTER errors if the column exists; run the CREATE on its own).
+ALTER TABLE pageviews ADD COLUMN scroll INTEGER;
+
+CREATE TABLE IF NOT EXISTS events (
+  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts      INTEGER NOT NULL,
+  kind    TEXT    NOT NULL,
+  target  TEXT,
+  path    TEXT,
+  city    TEXT,
+  region  TEXT,
+  country TEXT,
+  lat     REAL,
+  lng     REAL,
+  asn     INTEGER,
+  org     TEXT,
+  vid     TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_events_ts   ON events(ts);
+CREATE INDEX IF NOT EXISTS idx_events_vid  ON events(vid);
+CREATE INDEX IF NOT EXISTS idx_events_kind ON events(kind);
+
 -- The site wasn't public before bot-filtering was added, so the pre-launch rows
 -- are all crawlers/scanners. To start clean, also run:
 --   npx wrangler d1 execute site-analytics --remote --command "DELETE FROM pageviews;"

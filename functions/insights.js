@@ -51,6 +51,120 @@ const ORG_TYPE_LABEL = {
   unknown: 'Unknown',
 };
 
+// --- Engagement / session analysis -----------------------------------------
+// A visit "session" ends after this much idle time between a visitor's
+// pageviews (a fresh session starts on the next one).
+const SESSION_GAP = 30 * 60 * 1000; // 30 minutes
+
+// Build per-visitor engagement profiles from a flat list of engaged pageview
+// rows (ordered by vid, then ts), folding in each visitor's download and click
+// counts, plus aggregate session metrics. Done in JS rather than SQL window
+// functions for clarity; the engaged dataset is small.
+function buildEngagement(rows, dlByVid, evByVid) {
+  const byVid = new Map();
+  for (const r of rows) {
+    if (!byVid.has(r.vid)) byVid.set(r.vid, []);
+    byVid.get(r.vid).push(r);
+  }
+  let totalSessions = 0, bounceSessions = 0, sumPages = 0, sumDur = 0, durCount = 0;
+  const profiles = [];
+  for (const [vid, vrows] of byVid) {
+    // Split the visitor's ordered pageviews into sessions on the idle gap.
+    const sessions = [];
+    let cur = null;
+    for (const r of vrows) {
+      if (!cur || r.ts - cur.lastTs > SESSION_GAP) {
+        cur = { start: r.ts, lastTs: r.ts, pages: [] };
+        sessions.push(cur);
+      }
+      cur.pages.push({ ts: r.ts, path: r.path, dur: r.dur || 0, scroll: r.scroll });
+      cur.lastTs = r.ts;
+    }
+    let dwell = 0;
+    const paths = new Set();
+    const projects = new Set();
+    for (const r of vrows) {
+      dwell += r.dur || 0;
+      paths.add(r.path);
+      if (/^\/post\//.test(r.path || '')) projects.add(r.path);
+    }
+    for (const s of sessions) {
+      totalSessions++;
+      if (s.pages.length <= 1) bounceSessions++;
+      sumPages += s.pages.length;
+      const d = s.lastTs - s.start + (s.pages[s.pages.length - 1].dur || 0);
+      if (d > 0) { sumDur += d; durCount++; }
+    }
+    // Most-recent non-empty org / geo for this visitor.
+    let org = null, country = null, region = null, city = null;
+    for (let i = vrows.length - 1; i >= 0; i--) {
+      const r = vrows[i];
+      if (!org && r.org) org = r.org;
+      if (!country && r.country) country = r.country;
+      if (!region && r.region) region = r.region;
+      if (!city && r.city) city = r.city;
+    }
+    const ev = evByVid.get(vid) || {};
+    const dl = dlByVid.get(vid) || 0;
+    const kind = classifyOrg(org);
+    // Transparent additive score: intent signals a bot cluster can't fake.
+    let score = 0;
+    score += Math.min(sessions.length - 1, 4) * 3;    // returning visits
+    score += Math.min(projects.size, 5) * 2;          // project-post depth
+    score += Math.min(paths.size, 8);                 // breadth of pages
+    score += Math.min(Math.floor(dwell / 30000), 10); // ~1 per 30s active time
+    if (dl > 0) score += 6;                           // downloaded the CV
+    score += (ev.email || 0) * 6;                     // clicked the email CTA
+    score += (ev.social || 0) * 2;                    // clicked a social profile
+    score += (ev.outbound || 0) * 1;
+    if (kind === 'company' || kind === 'institution') score += 4;
+    profiles.push({
+      vid, org, kind, country, region, city,
+      sessions: sessions.length, views: vrows.length, pages: paths.size,
+      projects: projects.size, dwell, dl, ev, score,
+      firstSeen: vrows[0].ts, lastSeen: vrows[vrows.length - 1].ts,
+      sessionList: sessions,
+    });
+  }
+  profiles.sort((a, b) => b.score - a.score || b.lastSeen - a.lastSeen);
+  return {
+    profiles,
+    sessions: {
+      total: totalSessions,
+      bounceRate: totalSessions ? bounceSessions / totalSessions : null,
+      pagesPerSession: totalSessions ? sumPages / totalSessions : null,
+      avgDur: durCount ? sumDur / durCount : null,
+    },
+  };
+}
+
+// Compact "YYYY-MM-DD HH:MM" of an instant, in the viewer's timezone.
+function fmtWhen(ts, tz) {
+  const p = tzParts(ts, tz);
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${p.y}-${pad(p.m)}-${pad(p.d)} ${pad(p.hh)}:${pad(p.mm)}`;
+}
+
+// A visitor's identity label: org + kind tag when it's a company/institution,
+// otherwise city/country with the network in muted text.
+function visitorLabel(p) {
+  if (p.org && (p.kind === 'company' || p.kind === 'institution'))
+    return `<span class="tag ${p.kind}">${ORG_TYPE_LABEL[p.kind]}</span>${esc(p.org)}`;
+  const loc = [p.city, p.country].filter(Boolean).join(', ');
+  const net = p.org ? ` <span class="muted">&middot; ${esc(p.org)}</span>` : '';
+  return (loc ? esc(loc) : '<span class="muted">Unknown</span>') + net;
+}
+
+// Small badges summarizing a visitor's strongest intent signals.
+function signalBadges(p) {
+  const b = [];
+  if (p.dl > 0) b.push('<span class="sig cv">CV&darr;</span>');
+  if (p.ev && p.ev.email) b.push('<span class="sig email">email</span>');
+  if (p.ev && p.ev.social) b.push('<span class="sig social">social</span>');
+  if (p.sessions > 1) b.push(`<span class="sig ret">&times;${p.sessions}</span>`);
+  return b.length ? b.join(' ') : '<span class="muted">&middot;</span>';
+}
+
 // --- Timezone handling -----------------------------------------------------
 // Visit timestamps are stored and queried in UTC, but the dashboard shows date
 // ranges/labels in the viewer's own timezone (sent as a `tz` cookie by the
@@ -192,8 +306,74 @@ function fileLabel(p) {
   return esc(s.split('/').filter(Boolean).pop() || s || '?');
 }
 
-function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur, downloads, downloadTotal }) {
+function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur, downloads, downloadTotal, engagement, clicks, pageScroll }) {
   const today = ymd(Date.now(), tz);
+
+  // A cell of average scroll depth (percent), muted when unknown.
+  const scrollCell = (v) =>
+    Number.isFinite(v) && v > 0 ? esc(Math.round(v) + '%') : '<span class="muted">&middot;</span>';
+
+  // High-intent board (top of the engagement-ranked profiles) and the journeys
+  // (session paths) for the strongest few.
+  const profiles = (engagement && engagement.profiles) || [];
+  const sess = (engagement && engagement.sessions) || {};
+  const board = profiles.slice(0, 15);
+  const boardRows = board.length
+    ? board
+        .map(
+          (p) => `<tr>
+            <td>${visitorLabel(p)}</td>
+            <td class="num">${p.sessions}</td>
+            <td class="num">${p.pages}</td>
+            <td class="num">${p.projects ? p.projects : '<span class="muted">0</span>'}</td>
+            <td class="num">${durCell(p.dwell)}</td>
+            <td>${signalBadges(p)}</td>
+            <td class="num">${fmtWhen(p.lastSeen, tz)}</td>
+            <td class="num"><strong>${p.score}</strong></td>
+          </tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="8" class="empty">No engaged visitors in this range yet.</td></tr>';
+
+  const journeyBlocks = board.slice(0, 8).length
+    ? board
+        .slice(0, 8)
+        .map((p) => {
+          const sessHtml = p.sessionList
+            .map((s, i) => {
+              const items = s.pages
+                .map(
+                  (pg) =>
+                    `<li><span class="jp">${esc(pg.path)}</span> <span class="muted">${durCell(pg.dur)}${Number.isFinite(pg.scroll) && pg.scroll > 0 ? ` &middot; ${Math.round(pg.scroll)}% read` : ''}</span></li>`,
+                )
+                .join('');
+              return `<div class="sess"><div class="sess-h">Session ${i + 1} &middot; ${fmtWhen(s.start, tz)} &middot; ${s.pages.length} page${s.pages.length === 1 ? '' : 's'}</div><ol>${items}</ol></div>`;
+            })
+            .join('');
+          return `<details class="journey"><summary>${visitorLabel(p)} <span class="muted">&middot; ${p.sessions} visit${p.sessions === 1 ? '' : 's'} &middot; ${p.views} views &middot; ${fmtDur(p.dwell) || '0s'} &middot; score ${p.score}</span></summary>${sessHtml}</details>`;
+        })
+        .join('')
+    : '<p class="empty">No visitor journeys in this range yet.</p>';
+
+  const sessCards = `<div class="cards stats">
+    <div class="card"><div class="n">${sess.total || 0}</div><div class="l">Sessions</div></div>
+    <div class="card"><div class="n">${sess.bounceRate != null ? Math.round(sess.bounceRate * 100) + '%' : '&middot;'}</div><div class="l">Bounce rate</div></div>
+    <div class="card"><div class="n">${sess.pagesPerSession != null ? sess.pagesPerSession.toFixed(1) : '&middot;'}</div><div class="l">Pages / session</div></div>
+    <div class="card"><div class="n">${fmtDur(sess.avgDur) || '&middot;'}</div><div class="l">Avg. session</div></div>
+  </div>`;
+
+  const clickRows = (clicks || []).length
+    ? clicks
+        .map(
+          (r) => `<tr>
+            <td><span class="tag ${esc(r.kind)}">${esc(r.kind)}</span>${r.target ? esc(r.target) : '<span class="muted">&middot;</span>'}</td>
+            <td>${countryLabel(r.country)}</td>
+            <td>${r.org ? esc(r.org) : '<span class="muted">&middot;</span>'}</td>
+            <td class="num">${r.clicks}</td>
+          </tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="4" class="empty">No email / social / outbound clicks in this range yet.</td></tr>';
 
   // Preserve the bot toggle (data=all) across range tabs, the date form, and the
   // toggle links themselves. Engaged is the default, so it needs no param.
@@ -232,10 +412,10 @@ function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, total
   const pageRows = topPages.length
     ? topPages
         .map(
-          (r) => `<tr><td>${esc(r.path)}</td><td class="num">${r.visitors}</td><td class="num">${r.views}</td><td class="num">${durCell(pageDur[r.path])}</td></tr>`,
+          (r) => `<tr><td>${esc(r.path)}</td><td class="num">${r.visitors}</td><td class="num">${r.views}</td><td class="num">${durCell(pageDur[r.path])}</td><td class="num">${scrollCell(pageScroll && pageScroll[r.path])}</td></tr>`,
         )
         .join('')
-    : '<tr><td colspan="4" class="empty">No data.</td></tr>';
+    : '<tr><td colspan="5" class="empty">No data.</td></tr>';
 
   // Annotate each org with its classification, then split into the "notable"
   // set (likely employers / institutions) and the full network list.
@@ -421,7 +601,28 @@ function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, total
   .tag.isp { color:#94a3b8; background:rgba(148,163,184,0.1); }
   .tag.hosting { color:#fbbf24; background:rgba(251,191,36,0.1); }
   .tag.unknown { color:#7f8db0; background:rgba(127,141,176,0.1); }
+  .tag.email { color:#fca5a5; background:rgba(248,113,113,0.14); border-color:rgba(248,113,113,0.4); }
+  .tag.social { color:#7ea8ff; background:rgba(126,168,255,0.14); border-color:rgba(126,168,255,0.4); }
+  .tag.outbound { color:#fbbf24; background:rgba(251,191,36,0.12); border-color:rgba(251,191,36,0.35); }
   tr.isp td, tr.hosting td, tr.unknown td { color:#9fb0cf; }
+  .cards.stats { grid-template-columns:repeat(4,1fr); margin-bottom:1rem; }
+  .board td { vertical-align:middle; }
+  .sig { display:inline-block; font-size:0.64rem; text-transform:uppercase; letter-spacing:0.04em;
+         padding:0.06rem 0.36rem; border-radius:5px; margin:0.05rem 0.15rem 0.05rem 0; border:1px solid transparent; }
+  .sig.cv { color:#5eead4; background:rgba(94,234,212,0.14); border-color:rgba(94,234,212,0.4); }
+  .sig.email { color:#fca5a5; background:rgba(248,113,113,0.14); border-color:rgba(248,113,113,0.4); }
+  .sig.social { color:#7ea8ff; background:rgba(126,168,255,0.14); border-color:rgba(126,168,255,0.4); }
+  .sig.ret { color:#c4b5fd; background:rgba(167,139,250,0.14); border-color:rgba(167,139,250,0.4); }
+  .journey { border:1px solid rgba(126,168,255,0.14); border-radius:8px; padding:0.5rem 0.85rem;
+             margin-bottom:0.5rem; background:rgba(16,26,46,0.4); }
+  .journey > summary { color:#e8eef9; }
+  .journey > summary::before { content:'\\25B8'; display:inline-block; margin-right:0.4rem; transition:transform .15s; }
+  .journey[open] > summary::before { transform:rotate(90deg); }
+  .sess { margin:0.5rem 0 0.3rem; }
+  .sess-h { font-size:0.72rem; color:#7f8db0; text-transform:uppercase; letter-spacing:0.05em; }
+  .sess ol { margin:0.3rem 0 0.6rem; padding-left:1.5rem; }
+  .sess li { font-size:0.85rem; margin:0.15rem 0; }
+  .jp { color:#7ea8ff; }
   details > summary { cursor:pointer; color:#aab8d4; font-size:0.82rem; margin:0.4rem 0; list-style:none; }
   details > summary::before { content:'\\25B8'; display:inline-block; margin-right:0.4rem; transition:transform .15s; }
   details[open] > summary::before { transform:rotate(90deg); }
@@ -442,7 +643,7 @@ function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, total
   .leaflet-bar a:hover { background:#1d2f50 !important; }
   .leaflet-control-attribution { background:rgba(5,8,15,0.7) !important; color:#7f8db0 !important; }
   .leaflet-control-attribution a { color:#7ea8ff !important; }
-  @media (max-width:680px){ .cards{ grid-template-columns:repeat(2,1fr); } .grid2{ grid-template-columns:1fr; } }
+  @media (max-width:680px){ .cards{ grid-template-columns:repeat(2,1fr); } .cards.stats{ grid-template-columns:repeat(2,1fr); } .grid2{ grid-template-columns:1fr; } }
   @media (max-width:560px){ .daterange{ margin-left:0; } }
 </style>
 </head><body><div class="wrap">
@@ -474,6 +675,18 @@ function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, total
     <div class="card"><div class="n">${notable.length}</div><div class="l">Org / institution networks</div></div>
     <div class="card"><div class="n">${totals.countries}</div><div class="l">Countries</div></div>
   </div>
+
+  <h2>High-intent visitors <span class="hint">ranked by engagement: returning visits, pages &amp; projects viewed, time on site, CV download, and email/social clicks. Always excludes single-page zero-dwell bots.</span></h2>
+  <table class="board">
+    <thead><tr><th>Visitor</th><th class="num">Visits</th><th class="num">Pages</th><th class="num">Projects</th><th class="num">Time</th><th>Signals</th><th class="num">Last seen</th><th class="num">Score</th></tr></thead>
+    <tbody>${boardRows}</tbody>
+  </table>
+
+  <h2>Sessions &amp; engagement <span class="hint">a session ends after 30 min idle; bounce = single-page sessions</span></h2>
+  ${sessCards}
+
+  <h2>Visitor journeys <span class="hint">click a visitor to expand their session-by-session page path</span></h2>
+  ${journeyBlocks}
 
   <div class="maphead">
     <h2>Visitor map</h2>
@@ -507,7 +720,7 @@ function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, total
     <div>
       <h2>Top pages</h2>
       <table>
-        <thead><tr><th>Path</th><th class="num">Visitors</th><th class="num">Views</th><th class="num">Avg time</th></tr></thead>
+        <thead><tr><th>Path</th><th class="num">Visitors</th><th class="num">Views</th><th class="num">Avg time</th><th class="num">Avg read</th></tr></thead>
         <tbody>${pageRows}</tbody>
       </table>
     </div>
@@ -523,6 +736,12 @@ function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, total
   <table>
     <thead><tr><th>File</th><th>Country</th><th>Region</th><th>City</th><th>Organization / network</th><th class="num">Downloads</th></tr></thead>
     <tbody>${downloadRows}</tbody>
+  </table>
+
+  <h2>Email, social &amp; outbound clicks <span class="hint">clicks on your email (mailto), social profiles, and external links</span></h2>
+  <table>
+    <thead><tr><th>Type / target</th><th>Country</th><th>Organization / network</th><th class="num">Clicks</th></tr></thead>
+    <tbody>${clickRows}</tbody>
   </table>
 
   <h2>By location</h2>
@@ -871,6 +1090,11 @@ export async function onRequestPost({ request, env }) {
   } catch (e) {
     // ignore: e.g. downloads table not created yet
   }
+  try {
+    if (env.DB) await env.DB.prepare('DELETE FROM events').run();
+  } catch (e) {
+    // ignore: e.g. events table not created yet
+  }
 
   // Redirect back to the dashboard so a refresh shows the now-empty data.
   return new Response(null, { status: 303, headers: { ...SECURITY_HEADERS, Location: '/insights' } });
@@ -929,6 +1153,11 @@ export async function onRequestGet({ request, env }) {
     } catch (e) {
       // ignore: downloads table may not exist yet; best-effort cleanup
     }
+    try {
+      await db.prepare('DELETE FROM events WHERE vid = ?').bind(myVid).run();
+    } catch (e) {
+      // ignore: events table may not exist yet; best-effort cleanup
+    }
   }
 
   // Bot toggle. "engaged" (default) restricts every pageview query to visitors
@@ -943,9 +1172,10 @@ export async function onRequestGet({ request, env }) {
     totals, geo, topPages, countries, regions, cities, orgs, refs, sources,
     dwell = { avgVisit: null, avgPage: null }, pageDur = {},
     downloads = [], downloadTotal = { total: 0, visitors: 0 },
+    engagement = { profiles: [], sessions: {} }, clicks = [], pageScroll = {},
   ) =>
     new Response(
-      page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur, downloads, downloadTotal }),
+      page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, totals, geo, topPages, countries, regions, cities, orgs, refs, sources, dwell, pageDur, downloads, downloadTotal, engagement, clicks, pageScroll }),
       {
         headers: {
           ...SECURITY_HEADERS,
@@ -1170,6 +1400,73 @@ export async function onRequestGet({ request, env }) {
       // downloads table missing: skip download metrics
     }
 
+    // Engagement: high-intent visitor board, sessions/journeys (from engaged
+    // pageview rows joined with per-visitor downloads + click events), the
+    // click table, and per-page scroll depth. The `events`/`scroll` schema are
+    // later migrations, so wrap the whole block and degrade to empty if absent.
+    let engagement = { profiles: [], sessions: {} };
+    let clicks = [];
+    let pageScroll = {};
+    try {
+      const engRows = await db
+        .prepare(
+          `SELECT ts, vid, path, dur, scroll, org, country, region, city
+           FROM pageviews
+           WHERE ts >= ? AND ts < ?
+             AND vid IN (
+               SELECT vid FROM pageviews WHERE ts >= ? AND ts < ?
+               GROUP BY vid
+               HAVING COUNT(*) > 1
+                  OR MAX(CASE WHEN dur IS NOT NULL AND dur > 0 THEN 1 ELSE 0 END) = 1)
+           ORDER BY vid, ts LIMIT 5000`,
+        )
+        .bind(start, end, start, end)
+        .all();
+
+      const dlRes = await db
+        .prepare(`SELECT vid, COUNT(*) AS n FROM downloads WHERE ts >= ? AND ts < ? GROUP BY vid`)
+        .bind(start, end)
+        .all();
+      const dlByVid = new Map((dlRes.results || []).map((r) => [r.vid, r.n]));
+
+      const evRes = await db
+        .prepare(`SELECT vid, kind, COUNT(*) AS n FROM events WHERE ts >= ? AND ts < ? GROUP BY vid, kind`)
+        .bind(start, end)
+        .all();
+      const evByVid = new Map();
+      for (const r of evRes.results || []) {
+        const cur = evByVid.get(r.vid) || {};
+        cur[r.kind] = (cur[r.kind] || 0) + r.n;
+        evByVid.set(r.vid, cur);
+      }
+
+      engagement = buildEngagement(engRows.results || [], dlByVid, evByVid);
+
+      const cRes = await db
+        .prepare(
+          `SELECT kind, target, country, city, org,
+                  COUNT(*) AS clicks, COUNT(DISTINCT vid) AS visitors
+           FROM events WHERE ts >= ? AND ts < ?
+           GROUP BY kind, target, country, city, org
+           ORDER BY clicks DESC, visitors DESC LIMIT 200`,
+        )
+        .bind(start, end)
+        .all();
+      clicks = cRes.results || [];
+
+      const sRes = await db
+        .prepare(
+          `SELECT path, AVG(scroll) AS avgScroll FROM pageviews
+           WHERE ts >= ? AND ts < ? AND scroll IS NOT NULL
+           GROUP BY path`,
+        )
+        .bind(start, end)
+        .all();
+      for (const r of sRes.results || []) pageScroll[r.path] = r.avgScroll;
+    } catch (e) {
+      // events/scroll not migrated yet: leave engagement/clicks/scroll empty
+    }
+
     return render(
       totals,
       geo.results || [],
@@ -1184,6 +1481,9 @@ export async function onRequestGet({ request, env }) {
       pageDur,
       downloads,
       downloadTotal,
+      engagement,
+      clicks,
+      pageScroll,
     );
   } catch (e) {
     // most likely: schema.sql not applied yet (no such table: pageviews)

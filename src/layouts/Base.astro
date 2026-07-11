@@ -226,10 +226,26 @@ const structuredData = {
       // pageview row recorded on load. Cumulative totals are sent on tab-hide,
       // navigation, and unload; the server keeps the largest value seen.
       var dwell = null; // { pvid, active(ms), start(ts|null), sent(s) }
+      var maxScroll = 0; // deepest scroll on the current page, percent 0-100
+
+      // Sample how far down the page the visitor has reached (viewport bottom vs
+      // full document height) and keep the max. A short page fully visible with
+      // no scrolling counts as 100% (it was all seen).
+      function sampleScroll() {
+        try {
+          var doc = document.documentElement;
+          var h = Math.max(doc.scrollHeight, document.body ? document.body.scrollHeight : 0);
+          var seen = (window.scrollY || window.pageYOffset || 0) + window.innerHeight;
+          var pct = h > 0 ? Math.round(Math.min(100, (seen / h) * 100)) : 0;
+          if (pct > maxScroll) maxScroll = pct;
+        } catch (e) {}
+      }
 
       function startDwell(pvid) {
         flushDwell(); // close out any previous page first
         dwell = { pvid: pvid, active: 0, start: Date.now(), sent: -1 };
+        maxScroll = 0;
+        sampleScroll(); // record the initially-visible portion
       }
       function accumulateDwell() {
         if (dwell && dwell.start != null) {
@@ -243,41 +259,74 @@ const structuredData = {
       function flushDwell() {
         if (!dwell) return;
         accumulateDwell();
+        sampleScroll();
         var secs = Math.round(dwell.active / 1000);
         if (secs > 0 && secs !== dwell.sent && navigator.sendBeacon) {
           dwell.sent = secs;
           try {
             navigator.sendBeacon(
-              '/track?i=' + encodeURIComponent(dwell.pvid) + '&d=' + dwell.active,
+              '/track?i=' + encodeURIComponent(dwell.pvid) +
+                '&d=' + dwell.active +
+                '&sd=' + maxScroll,
             );
           } catch (e) {}
         }
         resumeDwell(); // keep counting if the visitor returns to the tab
       }
 
-      // --- File-download tracking ---------------------------------------------
-      // Fire a beacon when a genuine file download is triggered, so /track records
-      // it in the separate `downloads` table with server-side geo/network
-      // attribution. Scoped to same-origin `/files/` links carrying the `download`
-      // attribute (the CV PDF's "Download PDF" button, papers, ...), so an inline
-      // "open in new tab" view isn't counted as a download. Delegated and
-      // registered once (survives client-side navigations). Best-effort: never
-      // blocks or alters the click, so the download proceeds normally.
+      // --- Click tracking: downloads, email, social, outbound ------------------
+      // One delegated, capture-phase listener (registered once, survives client-
+      // side navigations). Best-effort: it never blocks or alters the click, so
+      // the download / navigation proceeds normally. Records, via /track:
+      //   * same-origin /files/ links with `download`  -> download event (e=dl)
+      //   * mailto: links (the contact CTA)            -> click event (k=email)
+      //   * external links to known social profiles     -> click event (k=social)
+      //   * any other external link                     -> click event (k=outbound)
+      // Internal navigation (page to page) is not tracked here; the pageview
+      // beacon already covers that.
+      var SOCIAL_HOSTS =
+        /(^|\.)(linkedin\.com|github\.com|twitter\.com|x\.com|devpost\.com|researchgate\.net|orcid\.org|scholar\.google\.com)$/;
       document.addEventListener('click', function (e) {
         try {
           if (/^(localhost|127\.|0\.0\.0\.0)/.test(location.hostname)) return;
           var el = e.target as HTMLElement;
-          var a = el.closest && el.closest('a[href][download]');
+          var a = el.closest && el.closest('a[href]');
           if (!a) return;
+          var raw = (a as HTMLAnchorElement).getAttribute('href') || '';
+          var here = encodeURIComponent(location.pathname);
+          // Email CTA (mailto:) -> email click event.
+          if (/^mailto:/i.test(raw)) {
+            var addr = raw.replace(/^mailto:/i, '').split('?')[0];
+            new Image().src =
+              '/track?e=click&k=email&t=' + encodeURIComponent(addr) +
+              '&p=' + here + '&_=' + Date.now();
+            return;
+          }
           var u = new URL((a as HTMLAnchorElement).href, location.href);
-          // Same-origin links into /files/ are our downloadable documents.
-          if (u.host !== location.host || !/^\/files\//.test(u.pathname)) return;
+          var internal = u.host === location.host || /(^|\.)atillasaadat\.(com|me)$/.test(u.host);
+          if (internal) {
+            // Same-origin /files/ download link (has the download attribute).
+            if (a.hasAttribute('download') && /^\/files\//.test(u.pathname)) {
+              new Image().src =
+                '/track?e=dl&p=' + encodeURIComponent(u.pathname) +
+                '&r=' + encodeURIComponent(document.referrer || '') +
+                '&t=' + Date.now();
+            }
+            return;
+          }
+          // External link -> social vs generic outbound, tagged by host.
+          var host = u.host.replace(/^www\./, '').toLowerCase();
+          var kind = SOCIAL_HOSTS.test(host) ? 'social' : 'outbound';
           new Image().src =
-            '/track?e=dl&p=' + encodeURIComponent(u.pathname) +
-            '&r=' + encodeURIComponent(document.referrer || '') +
-            '&t=' + Date.now();
+            '/track?e=click&k=' + kind + '&t=' + encodeURIComponent(host) +
+            '&p=' + here + '&_=' + Date.now();
         } catch (err) {}
       }, true);
+
+      // Track scroll depth on the current page (throttling isn't needed: the
+      // handler is a couple of reads and a max, and we only report on page leave).
+      window.addEventListener('scroll', sampleScroll, { passive: true });
+      window.addEventListener('resize', sampleScroll, { passive: true });
 
       document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'hidden') flushDwell();
