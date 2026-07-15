@@ -997,6 +997,13 @@ function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, total
 
     bindControls();
     setLevel('cities');
+
+    // Auto-refresh the data whenever the tab becomes visible again (i.e. you
+    // click back onto it), so returning to the dashboard always shows fresh
+    // numbers without touching the function while the tab is in the background.
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) refresh();
+    });
   })();
 </script>
 </body></html>`;
