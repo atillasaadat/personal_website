@@ -11,7 +11,7 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
-    "test:links": "npm run build && linkinator ./dist --config linkinator.config.json"
+    "test:links": "npm run build && linkinator ./dist --config linkinator.config.json --verbosity error"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",

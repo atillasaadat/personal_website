@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#
+# Pre-push gate: block pushing dead links live.
+#
+# Cloudflare Pages auto-deploys every push to `main`, so this is the last
+# checkpoint before a change is live. It runs the same crawl as CI (build the
+# site, then linkinator over dist/) and aborts the push on any broken internal
+# or external link.
+#
+# Enabled via `core.hooksPath` (see README / setup: `git config core.hooksPath .githooks`).
+# Bypass in a pinch (e.g. offline) with:  git push --no-verify
+set -euo pipefail
+
+echo "🔗 pre-push: checking for dead links (build + crawl)..."
+
+if npm run --silent test:links; then
+  echo "✅ pre-push: no dead links, pushing."
+else
+  echo "❌ pre-push: dead link(s) found above. Push aborted."
+  echo "   Fix them, or bypass with: git push --no-verify"
+  exit 1
+fi
