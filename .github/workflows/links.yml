@@ -1,0 +1,37 @@
+name: Link check
+
+# Crawls the built site (dist/) and checks every link, internal and external,
+# for 404s / dead hosts. Runs on every push and PR so a broken link fails before
+# merge, and weekly on a schedule to catch external "link rot" (a third-party
+# page going away) even when nothing in the repo changed.
+#
+# Bot-hostile hosts that reject automated crawlers with 403/999 but work fine in
+# a real browser (LinkedIn, X/Twitter, ResearchGate + its 10.13140 DOIs, AIAA,
+# SFL Missions), plus cpom.org.uk (a valid site with a misconfigured TLS chain
+# that browsers tolerate but Node rejects), are excluded in linkinator.config.json.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  links:
+    name: Dead-link check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # test:links builds the site and runs linkinator against dist/.
+      - name: Check links
+        run: npm run test:links

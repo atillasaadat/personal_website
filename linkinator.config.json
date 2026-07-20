@@ -1,0 +1,17 @@
+{
+  "recurse": true,
+  "timeout": 20000,
+  "retry": true,
+  "retryErrors": true,
+  "retryErrorsCount": 3,
+  "retryErrorsJitter": 3000,
+  "skip": [
+    "^https?://(www\\.)?linkedin\\.com",
+    "^https?://(www\\.)?(x|twitter)\\.com",
+    "^https?://(www\\.)?researchgate\\.net",
+    "^https://doi\\.org/10\\.13140/",
+    "^https?://(www\\.)?aiaa\\.org",
+    "^https?://(www\\.)?sflmissions\\.com",
+    "^https?://(www\\.)?cpom\\.org\\.uk"
+  ]
+}
