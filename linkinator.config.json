@@ -8,6 +8,7 @@
   "skip": [
     "^https?://(www\\.)?linkedin\\.com",
     "^https?://(www\\.)?(x|twitter)\\.com",
+    "^https?://scholar\\.google\\.com",
     "^https?://(www\\.)?researchgate\\.net",
     "^https://doi\\.org/10\\.13140/",
     "^https?://(www\\.)?aiaa\\.org",
