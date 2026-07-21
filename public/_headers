@@ -36,3 +36,8 @@
 # short lifetime with revalidation rather than a far-future expiry).
 /files/*
   Cache-Control: public, max-age=86400, must-revalidate
+
+# Vendored PDF.js viewer (self-hosted, see public/pdfjs/ + src/pages/cv.astro).
+# Static, version-pinned library code we control; safe to cache for a while.
+/pdfjs/*
+  Cache-Control: public, max-age=2592000

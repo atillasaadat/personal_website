@@ -1,6 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
 const cvPath = '/files/Atilla_Saadat_CV.pdf';
+// Self-hosted Mozilla PDF.js viewer (see public/pdfjs/), the same engine
+// behind Firefox's built-in PDF viewer: thumbnails, outline, find, zoom,
+// print, and download, all rendered from the file already on this origin.
+const viewerSrc = `/pdfjs/web/viewer.html?file=${encodeURIComponent(cvPath)}`;
 ---
 <Base title="CV | Atilla Saadat" description="Curriculum vitae of Atilla Saadat, Spacecraft GNC Engineer.">
   <section class="container section">
@@ -13,11 +17,7 @@ const cvPath = '/files/Atilla_Saadat_CV.pdf';
       </p>
     </div>
     <div class="viewer hud-card">
-      <iframe src={cvPath} title="Atilla Saadat CV"></iframe>
-      <p class="fallback">
-        Your browser can't display the embedded PDF.
-        <a href={cvPath} download>Download it instead</a>.
-      </p>
+      <iframe src={viewerSrc} title="Atilla Saadat CV"></iframe>
     </div>
   </section>
 </Base>
@@ -46,9 +46,7 @@ const cvPath = '/files/Atilla_Saadat_CV.pdf';
     border: 0;
     display: block;
   }
-  .fallback { display: none; padding: 1rem 1.25rem; }
   @media (max-width: 720px) {
-    /* mobile browsers often refuse inline PDF iframes, keep it short and rely on buttons */
-    .viewer { height: 70vh; }
+    .viewer { height: 80vh; }
   }
 </style>
