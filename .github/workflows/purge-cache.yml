@@ -1,0 +1,79 @@
+name: Purge Cloudflare cache after deploy
+
+# Cloudflare Pages auto-builds on every push to main, but a redeploy does NOT
+# invalidate objects already sitting in Cloudflare's CDN edge cache. Files with
+# a stable path and a long TTL (the CV PDF and other /files/*, /media/*, /og/*
+# assets) therefore keep serving the OLD copy from the edge until their max-age
+# expires, even though the new file is already live on the origin.
+#
+# This job waits for the Pages deployment of THIS commit to finish, then purges
+# the whole zone cache so the new assets go live immediately. Waiting first is
+# essential: purging before the deploy is live would just repopulate the edge
+# with the old file again.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   CLOUDFLARE_API_TOKEN    token with Zone > Cache Purge and
+#                           Account > Cloudflare Pages > Read permissions
+#   CLOUDFLARE_ACCOUNT_ID   Cloudflare account id
+#   CLOUDFLARE_ZONE_ID      zone id for atillasaadat.com
+#   CLOUDFLARE_PAGES_PROJECT  the Pages project name (e.g. personal-website)
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # manual "purge now" button
+
+# Never run two purges at once; if pushes land close together, queue them.
+concurrency:
+  group: purge-cache
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    name: Wait for deploy, then purge
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for the Pages deployment of this commit to go live
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PROJECT: ${{ secrets.CLOUDFLARE_PAGES_PROJECT }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+          echo "Waiting for Pages deployment of $SHA ..."
+          # Poll up to ~15 min (60 x 15s). A Pages build is usually 1-2 min.
+          for i in $(seq 1 60); do
+            resp=$(curl -s \
+              -H "Authorization: Bearer $CF_API_TOKEN" \
+              "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/$CF_PROJECT/deployments?per_page=25")
+            stage=$(echo "$resp" | jq -r --arg sha "$SHA" '
+              .result[]?
+              | select(.deployment_trigger.metadata.commit_hash == $sha)
+              | .latest_stage.name + ":" + (.latest_stage.status // "unknown")' | head -n1)
+            echo "attempt $i -> ${stage:-<no deployment for this commit yet>}"
+            case "$stage" in
+              deploy:success)
+                echo "Deployment is live."
+                exit 0 ;;
+              *:failure|*:canceled)
+                echo "Deployment did not succeed (${stage}); skipping purge."
+                exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "Timed out waiting for the deployment."
+          exit 1
+
+      - name: Purge the zone cache
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+        run: |
+          set -euo pipefail
+          resp=$(curl -s -X POST \
+            "https://api.cloudflare.com/client/v4/zones/$CF_ZONE_ID/purge_cache" \
+            -H "Authorization: Bearer $CF_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}')
+          echo "$resp" | jq .
+          echo "$resp" | jq -e '.success == true' > /dev/null
