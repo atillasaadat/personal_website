@@ -28,7 +28,7 @@ npm test          # Playwright responsive tests across mobile/tablet/desktop vie
 npm run test:links # build + crawl dist/ for dead links (internal + external) via linkinator
 ```
 
-A `pre-push` git hook (`.githooks/pre-push`) runs `npm run test:links` before every push, since Cloudflare auto-deploys `main` on push, so a dead link is caught before it goes live. Enable the tracked hooks after cloning with `git config core.hooksPath .githooks`; bypass a single push (e.g. offline) with `git push --no-verify`. The same crawl also runs in CI (`.github/workflows/links.yml`) on push/PR and weekly. Bot-hostile hosts (LinkedIn, X, Google Scholar, ResearchGate + its `10.13140` DOIs, AIAA, SFL Missions) and `cpom.org.uk` (valid site, misconfigured TLS chain) are excluded in `linkinator.config.json`.
+A `pre-push` git hook (`.githooks/pre-push`) runs `npm run test:links` before every push, since Cloudflare auto-deploys `main` on push, so a dead link is caught before it goes live. Enable the tracked hooks after cloning with `git config core.hooksPath .githooks`; bypass a single push (e.g. offline) with `git push --no-verify`. The same crawl also runs in CI (`.github/workflows/links.yml`) on push/PR and weekly. Bot-hostile hosts (LinkedIn, X, Google Scholar, ResearchGate + its `10.13140` DOIs, AIAA, MIT AeroAstro, SFL Missions) and `cpom.org.uk` (valid site, misconfigured TLS chain) are excluded in `linkinator.config.json`. (MIT AeroAstro intermittently drops connections from CI/cloud IPs, returning a status 0 with a multi-minute hang, though the link is fine in a browser.)
 
 ## Repository Layout
 

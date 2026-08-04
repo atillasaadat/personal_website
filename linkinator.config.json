@@ -12,6 +12,7 @@
     "^https?://(www\\.)?researchgate\\.net",
     "^https://doi\\.org/10\\.13140/",
     "^https?://(www\\.)?aiaa\\.org",
+    "^https?://aeroastro\\.mit\\.edu",
     "^https?://(www\\.)?sflmissions\\.com",
     "^https?://(www\\.)?cpom\\.org\\.uk"
   ]

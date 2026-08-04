@@ -7,8 +7,10 @@ name: Link check
 #
 # Bot-hostile hosts that reject automated crawlers with 403/999 but work fine in
 # a real browser (LinkedIn, X/Twitter, Google Scholar, ResearchGate + its 10.13140
-# DOIs, AIAA, SFL Missions), plus cpom.org.uk (a valid site with a misconfigured TLS chain
-# that browsers tolerate but Node rejects), are excluded in linkinator.config.json.
+# DOIs, AIAA, SFL Missions), MIT AeroAstro (intermittently drops CI/cloud connections,
+# status 0 + multi-minute hang, fine in a browser), plus cpom.org.uk (a valid site with
+# a misconfigured TLS chain that browsers tolerate but Node rejects), are excluded in
+# linkinator.config.json.
 on:
   push:
     branches: [main]
