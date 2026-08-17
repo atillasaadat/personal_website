@@ -71,10 +71,11 @@ const socials = [
   /* hover/focus tooltip with the site name */
   .socials a::after {
     content: attr(data-tip);
+    display: none;
     position: absolute;
     left: 50%;
     top: calc(100% + 8px);
-    transform: translateX(-50%) translateY(-4px);
+    transform: translateX(-50%);
     padding: 0.3rem 0.55rem;
     border: 1px solid var(--line-strong);
     border-radius: 6px;
@@ -84,15 +85,20 @@ const socials = [
     font-size: 0.68rem;
     letter-spacing: 0.06em;
     white-space: nowrap;
-    opacity: 0;
     pointer-events: none;
-    transition: opacity 0.15s ease, transform 0.15s ease;
     z-index: 5;
+    animation: tip-in 0.15s ease both;
   }
+  /* Only exists in layout while shown, so an off-screen tooltip on the
+     last icons can never widen the page (horizontal-overflow test at 360px). */
   .socials a:hover::after,
-  .socials a:focus-visible::after {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
+  .socials a:focus-visible::after { display: block; }
+  /* keep the tooltip on-screen at the row's ends */
+  .socials li:last-child a::after { left: auto; right: 0; transform: none; }
+  .socials li:first-child a::after { left: 0; transform: none; }
+  @keyframes tip-in {
+    from { opacity: 0; translate: 0 -4px; }
+    to { opacity: 1; translate: 0 0; }
   }
   .socials a:hover {
     color: var(--accent);
