@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import SatMap from '../components/SatMap.astro';
+import Socials from '../components/Socials.astro';
 
 const posts = (await getCollection('posts')).sort(
   (a, b) =>
@@ -108,6 +109,10 @@ const awards = awardsData
         <div class="hero-cta">
           <a class="btn btn-primary" href="/#projects">View Projects</a>
           <a class="btn" href="/cv">Read CV</a>
+        </div>
+        <div class="hero-socials">
+          <span class="hero-socials-label">// FIND ME ON</span>
+          <Socials compact />
         </div>
       </div>
       <div class="hero-photo hud-card">
@@ -228,7 +233,24 @@ const awards = awardsData
     left: 0;
     color: var(--accent);
   }
-  .hero-cta { display: flex; gap: 0.9rem; flex-wrap: wrap; }
+  .hero-cta { display: flex; gap: 0.9rem; flex-wrap: wrap; align-items: center; }
+  .hero-socials {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--line);
+  }
+  .hero-socials-label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+
   .btn {
     display: inline-block;
     padding: 0.7rem 1.5rem;
