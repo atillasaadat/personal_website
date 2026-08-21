@@ -1,6 +1,7 @@
 // Private visitor-analytics dashboard at /insights.
-// Protected by HTTP Basic Auth using the ADMIN_PASSWORD environment variable
-// (username is "admin"). Shows totals, a country/city map, traffic sources, and
+// Protected by an in-page password prompt (checked against the ADMIN_PASSWORD
+// environment variable via a /insights-scoped cookie, never an Authorization
+// header). Shows totals, a country/city map, traffic sources, and
 // the networks/organizations visitors come from (to spot employer / institution
 // visits), filterable by preset range or a custom from/to date range.
 
@@ -1050,8 +1051,25 @@ function isCrossSite(request) {
   return false;
 }
 
-// Basic-auth gate shared by the dashboard (GET) and the clear-data action
-// (POST). Returns a Response to short-circuit, or null when authorized.
+// Password gate shared by the dashboard (GET) and the clear-data action
+// (POST). Deliberately NOT HTTP Basic Auth: browsers auto-attach cached Basic
+// credentials to every request on the origin, which tripped Cloudflare's
+// leaked-credential rate-limit rule (Error 1015) sitewide. Instead the page
+// itself asks for the password once and stores it in a cookie scoped to
+// /insights only; Cloudflare's credential scan ignores cookies. Returns a
+// Response to short-circuit, or null when authorized.
+const AUTH_COOKIE = 'ipw';
+
+function isAuthorized(request, env) {
+  let pw;
+  try {
+    pw = cookieVal(request, AUTH_COOKIE); // decodes; throws on malformed % sequences
+  } catch (e) {
+    return false;
+  }
+  return pw !== null && safeEqual(pw, env.ADMIN_PASSWORD);
+}
+
 function authGate(request, env) {
   if (!env.ADMIN_PASSWORD) {
     return new Response('Set the ADMIN_PASSWORD environment variable to enable /insights.', {
@@ -1059,22 +1077,71 @@ function authGate(request, env) {
       headers: SECURITY_HEADERS,
     });
   }
-  const auth = request.headers.get('Authorization') || '';
-  const expected = 'Basic ' + btoa('admin:' + env.ADMIN_PASSWORD);
-  if (!safeEqual(auth, expected)) {
-    return new Response('Authentication required.', {
-      status: 401,
-      headers: { ...SECURITY_HEADERS, 'WWW-Authenticate': 'Basic realm="insights", charset="UTF-8"' },
-    });
+  if (isAuthorized(request, env)) return null;
+  // Unauthenticated POST (clear-data) gets a plain 403; the login form is only
+  // for the dashboard GET.
+  if (request.method !== 'GET') {
+    return new Response('Authentication required.', { status: 403, headers: SECURITY_HEADERS });
   }
-  return null;
+  // A present-but-rejected cookie means a wrong password was entered.
+  const hadCookie = new RegExp('(?:^|;\\s*)' + AUTH_COOKIE + '=').test(
+    request.headers.get('Cookie') || '',
+  );
+  return loginPage(hadCookie);
+}
+
+// Minimal password prompt. The submit handler never sends the password to the
+// server as a form field or auth header (either would be visible to
+// Cloudflare's leaked-credential detection); it just drops it in a long-lived
+// cookie scoped to /insights and reloads, and the gate above checks the cookie.
+function loginPage(wasWrong) {
+  const html = `<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Insights</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+         background: #0b0e14; color: #e6e9f0;
+         font: 16px/1.5 system-ui, -apple-system, sans-serif; }
+  form { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: center; padding: 1rem; }
+  input { background: #131826; color: #e6e9f0; border: 1px solid #2a3350;
+          border-radius: 8px; padding: .6rem .9rem; font-size: 1rem; width: 14rem; }
+  input:focus { outline: none; border-color: #5b7cfa; }
+  button { background: #5b7cfa; color: #fff; border: 0; border-radius: 8px;
+           padding: .6rem 1.1rem; font-size: 1rem; cursor: pointer; }
+  p.err { width: 100%; text-align: center; color: #f28b82; margin: 0 0 .25rem; }
+</style></head><body>
+<form id="f">
+  ${wasWrong ? '<p class="err">Wrong password.</p>' : ''}
+  <input id="p" type="password" placeholder="Password" autocomplete="off" autofocus>
+  <button type="submit">View</button>
+</form>
+<script>
+  document.getElementById('f').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = document.getElementById('p').value;
+    if (!v) return;
+    document.cookie = '${AUTH_COOKIE}=' + encodeURIComponent(v) +
+      '; Path=/insights; Max-Age=34560000; SameSite=Strict; Secure';
+    location.reload();
+  });
+</script>
+</body></html>`;
+  return new Response(html, {
+    status: 200,
+    headers: { ...SECURITY_HEADERS, 'Content-Type': 'text/html; charset=utf-8' },
+  });
 }
 
 // POST /insights with action=clear wipes all recorded visits. Behind the same
-// Basic Auth as the dashboard; the UI also requires an explicit confirmation.
+// password gate as the dashboard; the UI also requires an explicit confirmation.
 export async function onRequestPost({ request, env }) {
-  // Block cross-site POSTs: cached Basic Auth is auto-resent by the browser, so
-  // without this a malicious page could CSRF this destructive action.
+  // Block cross-site POSTs: the auth cookie is auto-sent by the browser
+  // (SameSite=Strict already stops this in modern browsers, but keep the
+  // explicit check), so without it a malicious page could CSRF this
+  // destructive action.
   if (isCrossSite(request)) {
     return new Response('Cross-site request blocked.', { status: 403, headers: SECURITY_HEADERS });
   }
