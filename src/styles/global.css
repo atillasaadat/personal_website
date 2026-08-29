@@ -193,6 +193,34 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
 }
 .prose figure.figure-single figcaption a { color: var(--accent-2); }
 
+/* Image floated to the right of body text (use <figure class="figure-float">
+   in post markdown). Good for tall/portrait shots that would otherwise
+   dominate the column. Collapses to a centered full-width figure on mobile. */
+.prose figure.figure-float {
+  float: right;
+  width: min(300px, 42%);
+  margin: 0.35rem 0 1rem 1.75rem;
+}
+.prose figure.figure-float img { width: 100%; margin: 0 0 0.55rem; }
+.prose figure.figure-float figcaption {
+  text-align: center;
+  color: var(--text-1);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+@media (max-width: 640px) {
+  .prose figure.figure-float {
+    float: none;
+    width: auto;
+    margin: 1.75rem 0;
+  }
+  .prose figure.figure-float img {
+    width: auto;
+    max-height: 70vh;
+    margin-inline: auto;
+  }
+}
+
 /* Tall (portrait) media: cap the height so it fits on screen instead of
    running the full column width. Used for portrait phone videos/photos. */
 .prose video.media-tall,

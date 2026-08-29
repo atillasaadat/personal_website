@@ -8,11 +8,12 @@ highlight: "26,467 on-orbit images captured with the autonomous RSO imaging tool
 highlightHref: "https://www.linkedin.com/posts/on-6122023-we-launched-droid001-today-ugcPost-7433224837478797313-gUjX/"
 ---
 
+<figure class="figure-float">
+  <img src="/media/gnc-engineer-turion-space/img00.jpg" alt="Cleanroom Image with Droid.001" loading="lazy" />
+  <figcaption>In the cleanroom during AIT of Droid.001</figcaption>
+</figure>
+
 At Turion Space, we’re pushing the boundaries of space technology, particularly with our work on space situational awareness and orbital debris mitigation. As a Guidance, Navigation, and Control (GNC) Engineer, I've developed the GNC systems and ensured the operational success of our first satellite **Droid.001**, and the in-development **Droid.002** (launching Q1 2025). This post provides a brief look at my contributions to spacecraft missions, focusing on significant moments, launch experiences, and my role in pushing the boundaries of space exploration.
-
-![Cleanroom Image with Droid.001](/media/gnc-engineer-turion-space/img00.jpg)
-
-In the cleanroom during AIT of Droid.001
 
 #### **The Journey of Droid.001: From Launch to Full Commissioning**
 
