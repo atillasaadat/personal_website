@@ -256,8 +256,9 @@ const affiliations = [
     overflow: hidden;
     border-radius: 11px;
     border: 1px solid var(--line);
-    /* Light plate so dark/colored logos read in either theme (matches Awards). */
-    background: #eef1f7;
+    /* Light plate in the dark theme so dark/colored logos read; in the light
+       theme it matches the page (see --logo-plate). Stays opaque to hide the rail. */
+    background: var(--logo-plate);
   }
   .xp-logo img { width: 100%; height: 100%; object-fit: contain; padding: 7px; margin: 0; border: 0; border-radius: 0; }
   .xp-mono {

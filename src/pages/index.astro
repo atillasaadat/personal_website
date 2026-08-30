@@ -23,19 +23,26 @@ const specialties = [
 
 const awardsData = [
   {
+    date: '2025-08',
+    logo: '/media/awards/mit-arclab.png',
+    title: 'MIT ARCLab Prize for AI Innovation in Space: 4th Place',
+    body: 'Placed 4th of 18 validated teams (as Team SAADAT) in the 2025 MIT ARCLab STORM-AI Challenge, forecasting thermospheric density for LEO spacecraft in real time with a BiGRU-attention network.',
+    href: 'https://aeroastro.mit.edu/arclab/aichallenge/',
+    links: [{ label: 'Read the project write-up', href: '/post/mit-storm-ai-challenge' }],
+  },
+  {
     date: '2024-10',
-    logo: '/media/awards/payload.png',
+    logo: '/media/awards/payload-dark.png',
     title: 'Payload Pioneer 30 Under 30',
     body: 'Recognized by Payload’s “30 under 30” for achievements across the space industry, including innovation, advocacy, and leadership.',
     href: 'https://payloadspace.com/atilla-saadat-turion-space/',
-    light: true,
     links: [{ label: 'Read the Payload feature', href: 'https://payloadspace.com/atilla-saadat-turion-space/' }],
   },
   {
     date: '2024-09',
     logo: '/media/awards/sspi.png',
     title: 'SSPI 20 Under 35',
-    body: 'Awarded SSPI’s “20 Under 35” recognition for exceptional leadership, innovation, and contributions to the space and satellite industry.',
+    body: 'Awarded the Space & Satellite Professionals International (SSPI) “20 Under 35” recognition for exceptional leadership, innovation, and contributions to the space and satellite industry.',
     href: 'https://www.sspi.org/atilla-saadat',
     links: [{ label: 'Read the SSPI profile', href: 'https://www.sspi.org/atilla-saadat' }],
   },
@@ -183,9 +190,13 @@ const awards = awardsData
             <p>{body}</p>
             {links && (
               <p class="award-links">
-                {links.map((l) => (
-                  <a href={l.href} target="_blank" rel="noopener">{l.label} ↗</a>
-                ))}
+                {links.map((l) =>
+                  l.href.startsWith('/') ? (
+                    <a href={l.href}>{l.label} →</a>
+                  ) : (
+                    <a href={l.href} target="_blank" rel="noopener">{l.label} ↗</a>
+                  ),
+                )}
               </p>
             )}
           </div>
@@ -304,11 +315,13 @@ const awards = awardsData
     height: 84px;
     width: fit-content;
     max-width: 100%;
-    padding: 9px 14px;
+    /* Horizontal padding collapses to 0 in the light theme (no visible tile)
+       so the logo's left edge lines up with the text below it. */
+    padding: 9px var(--logo-tile-pad-x, 14px);
     margin-bottom: 0.9rem;
     border-radius: 10px;
-    background: #eef1f7;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--logo-tile);
+    border: 1px solid var(--logo-tile-line);
     transition: transform 0.2s ease;
   }
   .award.light-logo .award-logo {

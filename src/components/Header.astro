@@ -194,5 +194,6 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
       }
     }
   }
-  document.addEventListener('astro:page-load', setupHeader);
+  import { onPageReady } from '../lib/page-ready';
+  onPageReady(setupHeader);
 </script>

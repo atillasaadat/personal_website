@@ -89,7 +89,7 @@ const poster = isVideo ? cover!.replace(/\.mp4$/, '-poster.jpg') : undefined;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 0.6rem;
+    gap: 0.4rem;
     margin: 0;
     font-family: var(--font-mono);
     font-size: 0.72rem;
@@ -97,7 +97,17 @@ const poster = isVideo ? cover!.replace(/\.mp4$/, '-poster.jpg') : undefined;
     text-transform: uppercase;
     color: var(--text-2);
   }
-  .tag { color: var(--accent-2); }
+  .meta time { margin-right: 0.35rem; }
+  /* Outlined chips (same treatment as the tag list on post pages) so the
+     keywords read as separate items rather than one run-on line. */
+  .tag {
+    color: var(--accent-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
   h3 { margin: 0; font-size: 1.08rem; }
   .desc {
     margin: 0;
@@ -153,5 +163,6 @@ const poster = isVideo ? cover!.replace(/\.mp4$/, '-poster.jpg') : undefined;
     vids.forEach((v) => io.observe(v));
     (window as any).__cardVidIO = io;
   }
-  document.addEventListener('astro:page-load', setupCardVideos);
+  import { onPageReady } from '../lib/page-ready';
+  onPageReady(setupCardVideos);
 </script>

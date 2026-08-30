@@ -3,6 +3,13 @@ import '@fontsource/sora/600.css';
 import '@fontsource/sora/700.css';
 import '@fontsource-variable/ibm-plex-sans';
 import '@fontsource/ibm-plex-mono/400.css';
+// The latin faces every page renders with, preloaded (see <head>) so text
+// paints in its final font on first render instead of swapping in later,
+// which was the site's main source of layout shift (CLS).
+import soraSemiUrl from '@fontsource/sora/files/sora-latin-600-normal.woff2?url';
+import soraBoldUrl from '@fontsource/sora/files/sora-latin-700-normal.woff2?url';
+import plexSansUrl from '@fontsource-variable/ibm-plex-sans/files/ibm-plex-sans-latin-wght-normal.woff2?url';
+import plexMonoUrl from '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2?url';
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
 import Starfield from '../components/Starfield.astro';
@@ -100,6 +107,9 @@ const structuredData = {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    {[soraBoldUrl, soraSemiUrl, plexSansUrl, plexMonoUrl].map((href) => (
+      <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />
+    ))}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Apply the saved theme (default dark) before first paint, and re-apply
          after each view-transition swap so it survives client-side navigation. -->
@@ -338,7 +348,8 @@ const structuredData = {
         flushDwell();
         dwell = null;
       });
-      document.addEventListener('astro:page-load', enhancePage);
+      import { onPageReady } from '../lib/page-ready';
+      onPageReady(enhancePage);
     </script>
   </body>
 </html>

@@ -24,6 +24,13 @@
   --footer-bg: rgba(10, 16, 30, 0.5);
   --overlay-bg: rgba(3, 5, 10, 0.93);
   --sky-glow: rgba(56, 89, 153, 0.22);
+  /* Light tile behind award/partner logos (they are dark-on-transparent
+     PNGs drawn for white paper); the light theme drops the tile entirely. */
+  --logo-tile: #eef1f7;
+  --logo-tile-line: rgba(255, 255, 255, 0.08);
+  /* Opaque variant for tiles that must hide what is behind them (the About
+     timeline rail); in the light theme it simply matches the page. */
+  --logo-plate: #eef1f7;
 
   --font-display: 'Sora', system-ui, sans-serif;
   --font-body: 'IBM Plex Sans Variable', system-ui, sans-serif;
@@ -62,6 +69,10 @@
   --footer-bg: rgba(226, 233, 244, 0.62);
   --overlay-bg: rgba(210, 221, 238, 0.92);
   --sky-glow: rgba(120, 150, 210, 0.18);
+  --logo-tile: transparent;
+  --logo-tile-line: transparent;
+  --logo-tile-pad-x: 0px;
+  --logo-plate: var(--bg-0);
 
   color-scheme: light;
 }
@@ -192,6 +203,78 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   margin: 0 auto;
 }
 .prose figure.figure-single figcaption a { color: var(--accent-2); }
+
+/* Click-to-expand figure (use <figure class="figure-zoom"> in post markdown for
+   posters/diagrams too dense to read at column width); the lightbox <dialog>
+   itself is created by the post layout script and appended to <body>. */
+.prose figure.figure-zoom img { cursor: zoom-in; }
+.lightbox {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  /* The dialog spans the viewport, so paint the dim on it as well as on
+     ::backdrop (some engines render the backdrop lighter than specified). */
+  background: rgba(0, 3, 8, 0.94);
+  color: var(--text-0);
+}
+.lightbox::backdrop { background: rgba(0, 3, 8, 0.94); }
+.lightbox-scroll {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lightbox-img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  cursor: zoom-in;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+}
+/* 1:1 zoom: drop the fit constraints and let the wrapper scroll/pan. */
+.lightbox.zoomed .lightbox-scroll { display: block; }
+.lightbox.zoomed .lightbox-img { max-width: none; max-height: none; cursor: zoom-out; }
+.lightbox-close {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(10, 14, 22, 0.8);
+  color: var(--text-0);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.lightbox-close:hover { border-color: var(--accent); color: var(--accent); }
+.lightbox-hint {
+  position: fixed;
+  left: 50%;
+  bottom: 0.75rem;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(10, 14, 22, 0.8);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  pointer-events: none;
+}
 
 /* Image floated to the right of body text (use <figure class="figure-float">
    in post markdown). Good for tall/portrait shots that would otherwise

@@ -12,7 +12,7 @@ const satCount = 20;
   <div class="container">
     <div class="section-head">
       <p class="kicker">// ON ORBIT</p>
-      <h2>Live 3D Orbits of {satCount} Satellites I've Helped Fly</h2>
+      <h2>Live 3D Orbits of {satCount} Satellites I've Contributed To</h2>
     </div>
     <div class="map-shell hud-card" id="satmap-shell">
       <div id="satmap-loading" class="loading">
@@ -107,11 +107,38 @@ const satCount = 20;
   // mounts, Cesium + satellite.js load from cache instead of over the network,
   // which is the bulk of the perceived load time. (Cache is partitioned by the
   // top-level site, so the iframe reuses these same-site prefetches.)
+  const CESIUM = 'https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/';
+  // Cesium's terrain web worker bootstraps by importScripts-ing these files
+  // strictly one after another, each a full round-trip to cesium.com, which
+  // was the bulk of the globe's 1-2 s "blank" time. Captured from a request
+  // trace of Cesium 1.81; the hashed names must be refreshed if the pinned
+  // Cesium version in public/satmap.html ever changes.
+  const CESIUM_WORKERS = [
+    'cesiumWorkerBootstrapper.js', 'transferTypedArrayTest.js',
+    'createVerticesFromHeightmap.js', 'Cartesian2-8417ca3d.js', 'Check-d18af7c4.js',
+    'when-208fe5b0.js', 'Math-4e53b694.js', 'EllipsoidTangentPlane-9123a53b.js',
+    'Transforms-a73b3b3b.js', 'RuntimeError-7f634f5d.js', 'IntersectionTests-7d224a2f.js',
+    'Plane-4aa8974d.js', 'TerrainEncoding-73cbc4e6.js', 'AttributeCompression-f02ec82f.js',
+    'ComponentDatatype-9204e9f6.js', 'WebGLConstants-76bb35d1.js',
+    'OrientedBoundingBox-18b4901f.js', 'WebMercatorProjection-ffb6b9f8.js',
+    'createTaskProcessorWorker.js',
+  ].map((f) => CESIUM + 'Workers/' + f);
+  // Data tables Cesium needs before the first frame, and the starfield /
+  // moon textures so the sky is complete the moment the globe appears.
+  const CESIUM_ASSETS = [
+    'Assets/approximateTerrainHeights.json',
+    'Assets/IAU2006_XYS/IAU2006_XYS_18.json',
+    'Assets/Textures/moonSmall.jpg',
+    ...['px', 'mx', 'py', 'my', 'pz', 'mz'].map((f) => `Assets/Textures/SkyBox/tycho2t3_80_${f}.jpg`),
+  ].map((f) => CESIUM + f);
   const PREFETCH = [
     '/satmap.html',
-    'https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Cesium.js',
-    'https://cesium.com/downloads/cesiumjs/releases/1.81/Build/Cesium/Widgets/widgets.css',
+    '/media/satmap/earth-base.jpg',
+    CESIUM + 'Cesium.js',
+    CESIUM + 'Widgets/widgets.css',
     'https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.min.js',
+    ...CESIUM_WORKERS,
+    ...CESIUM_ASSETS,
   ];
 
   // Inject a <link> once, deduping by rel+href so repeated page-loads (via
@@ -138,11 +165,22 @@ const satCount = 20;
     // globe assets when the main thread goes idle so they never block the
     // homepage's own critical resources.
     for (const origin of ORIGINS) addLink('preconnect', origin, true);
+    // ~5 MB of globe assets: only after the page's own load event, only when
+    // the main thread is idle, and never on Data Saver / 2g-3g connections
+    // (the globe still loads on demand there, just without the head start).
+    const conn = (navigator as any).connection;
+    const slowNet = !!conn && (conn.saveData || /2g|3g/.test(conn.effectiveType || ''));
     const prefetchAll = () => { for (const href of PREFETCH) addLink('prefetch', href); };
-    if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(prefetchAll, { timeout: 3000 });
-    } else {
-      setTimeout(prefetchAll, 1200);
+    const prefetchWhenIdle = () => {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(prefetchAll, { timeout: 4000 });
+      } else {
+        setTimeout(prefetchAll, 1500);
+      }
+    };
+    if (!slowNet) {
+      if (document.readyState === 'complete') prefetchWhenIdle();
+      else window.addEventListener('load', prefetchWhenIdle, { once: true });
     }
 
     let loaded = false;
@@ -159,12 +197,32 @@ const satCount = 20;
       // would NOT apply and the iframe would collapse to its default 300x150 box.
       iframe.style.cssText =
         'position:absolute;inset:0;width:100%;height:100%;border:0;z-index:1;';
+      // The globe page posts 'satmap-ready' the moment its base imagery is
+      // fully rendered (behind its own fade-out veil), so the spinner clears
+      // at exactly the right instant. The load-event timer is only a fallback
+      // in case the message never arrives.
+      const onReady = (e: MessageEvent) => {
+        if (e.origin !== location.origin || e.data !== 'satmap-ready') return;
+        loading!.hidden = true;
+        window.removeEventListener('message', onReady);
+      };
+      window.addEventListener('message', onReady);
       iframe.addEventListener('load', () => {
-        // give Cesium a beat to paint the first frame before clearing the spinner
-        setTimeout(() => { loading!.hidden = true; }, 700);
+        setTimeout(() => { loading!.hidden = true; }, 5000);
       });
       shell!.appendChild(iframe);
       fsBtn!.hidden = false;
+
+      // Cesium redraws every frame for as long as it exists, which drags the
+      // whole page's frame rate even when the globe is scrolled out of view.
+      // Tell it to stop its render loop while off-screen and resume on return.
+      if ('IntersectionObserver' in window) {
+        const vis = new IntersectionObserver((entries) => {
+          const visible = entries.some((e) => e.isIntersecting);
+          iframe.contentWindow?.postMessage(visible ? 'satmap-resume' : 'satmap-pause', location.origin);
+        });
+        vis.observe(shell!);
+      }
     }
 
     if ('IntersectionObserver' in window) {
@@ -188,5 +246,6 @@ const satCount = 20;
     });
   }
 
-  document.addEventListener('astro:page-load', initSatMap);
+  import { onPageReady } from '../lib/page-ready';
+  onPageReady(initSatMap);
 </script>

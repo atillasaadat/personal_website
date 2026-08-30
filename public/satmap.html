@@ -51,6 +51,13 @@
     .cesium-infoBox-title { background: rgba(79, 195, 247, 0.12) !important;
                              color: #4fc3f7 !important; font-weight: 600 !important; letter-spacing: 0.5px !important; }
     .cesium-infoBox-iframe { background: transparent !important; }
+
+    /* Covers the canvas during Cesium init so visitors never see the globe's
+       tiles pop in half-textured; lifted the first frame the base imagery is
+       fully rendered. */
+    #veil { position: absolute; inset: 0; z-index: 40; background: #000308;
+            opacity: 1; transition: opacity 0.45s ease; pointer-events: none; }
+    #veil.lifted { opacity: 0; }
   </style>
 </head>
 <body>
@@ -72,6 +79,7 @@
     <div id="data-source"></div>
   </div>
   <div id="cesiumContainer"></div>
+  <div id="veil"></div>
 
   <script>
     /* =========================================================================
@@ -220,11 +228,14 @@
     // ============================================================
     if (Cesium.Ion) Cesium.Ion.defaultAccessToken = '';
 
-    // Base imagery: NaturalEarthII (bundled with Cesium, guaranteed to load
-    // even if the network is restricted, keeps us from ever showing a blank globe).
+    // Base imagery: a single pre-stitched NaturalEarthII texture (2048x1024,
+    // the full resolution Cesium ships) self-hosted on our own origin. One
+    // same-origin request from the Cloudflare edge (prefetched by the homepage
+    // before this iframe even mounts) instead of 32 tile requests to
+    // cesium.com, so the globe appears fully textured almost instantly.
     const viewer = new Cesium.Viewer('cesiumContainer', {
-      imageryProvider: new Cesium.TileMapServiceImageryProvider({
-        url: Cesium.buildModuleUrl('Assets/Textures/NaturalEarthII'),
+      imageryProvider: new Cesium.SingleTileImageryProvider({
+        url: '/media/satmap/earth-base.jpg',
       }),
       baseLayerPicker: false, geocoder: false, homeButton: false, infoBox: true,
       navigationHelpButton: false, sceneModePicker: false, animation: true,
@@ -233,20 +244,63 @@
 
     // Overlay: ArcGIS World Imagery (free, no auth). Realistic satellite
     // imagery, true-color continents, dark oceans, visible cloud cover where
-    // present. If the tiles fail to load (CSP, rate limit, server down), the
-    // NaturalEarthII base shows through with no visible breakage.
-    try {
-      const arcgis = new Cesium.ArcGisMapServerImageryProvider({
-        url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
-      });
-      arcgis.errorEvent.addEventListener(function (err) {
-        // Non-fatal, base layer remains visible
-        console.warn('ArcGIS tile error (falling back to NaturalEarthII):', err && err.message);
-      });
-      viewer.imageryLayers.addImageryProvider(arcgis);
-    } catch (e) {
-      console.warn('ArcGIS provider unavailable:', e && e.message);
+    // present. Added only AFTER the local base texture is fully rendered (see
+    // the veil logic below) so remote tile latency never delays or disrupts
+    // the globe's first appearance; it refines progressively on top. If the
+    // tiles fail to load (CSP, rate limit, server down), the base shows
+    // through with no visible breakage.
+    function addArcGisOverlay() {
+      try {
+        const arcgis = new Cesium.ArcGisMapServerImageryProvider({
+          url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+        });
+        arcgis.errorEvent.addEventListener(function (err) {
+          // Non-fatal, base layer remains visible
+          console.warn('ArcGIS tile error (falling back to base imagery):', err && err.message);
+        });
+        viewer.imageryLayers.addImageryProvider(arcgis);
+      } catch (e) {
+        console.warn('ArcGIS provider unavailable:', e && e.message);
+      }
     }
+
+    // Lift the veil on the first frame where the base imagery is fully
+    // rendered, tell the parent page (so it can drop its loading spinner at
+    // exactly the right moment), then start the hi-res overlay refinement.
+    // The parent page asks us to stop rendering while the globe is scrolled
+    // out of view ('satmap-pause') and to resume when it comes back. Ignored
+    // until the first full frame has been shown so the veil can still lift.
+    let paused = false, lifted = false;
+    function applyRenderLoop() { viewer.useDefaultRenderLoop = !(paused && lifted); }
+    window.addEventListener('message', function (e) {
+      if (e.origin !== location.origin) return;
+      if (e.data === 'satmap-pause') paused = true;
+      else if (e.data === 'satmap-resume') paused = false;
+      else return;
+      applyRenderLoop();
+    });
+
+    (function () {
+      const veil = document.getElementById('veil');
+      function lift() {
+        if (lifted) return;
+        lifted = true;
+        veil.classList.add('lifted');
+        applyRenderLoop();
+        if (window.parent !== window) {
+          try { window.parent.postMessage('satmap-ready', '*'); } catch (e) { /* non-fatal */ }
+        }
+        addArcGisOverlay();
+      }
+      // globe.tilesLoaded is true on the very first frames (nothing queued
+      // yet), so wait for the tile queue to actually fill and then drain.
+      let sawTiles = false;
+      const stop = viewer.scene.globe.tileLoadProgressEvent.addEventListener(function (queued) {
+        if (queued > 0) { sawTiles = true; return; }
+        if (sawTiles) { stop(); lift(); }
+      });
+      setTimeout(lift, 4000);   // failsafe: never keep the veil up forever
+    })();
 
     // ---- Sky / atmosphere tuning for a more cinematic look ----
     const scene = viewer.scene;
@@ -584,17 +638,16 @@
       }
     })();
 
-    // Camera: straight-down view. Closer (14 Mm) than the old 22 Mm so the
-    // globe fills most of the frame instead of floating small in black space.
-    // Flies immediately, no need to wait for TLEs.
-    viewer.scene.camera.flyTo({
+    // Camera: straight-down view, framed instantly (setView, not flyTo) so
+    // the very first painted frame already shows the globe at its final
+    // 14 Mm framing instead of spending ~1.4 s flying in from the default view.
+    viewer.scene.camera.setView({
       destination: Cesium.Cartesian3.fromDegrees(-30, 15, 14000000),
       orientation: {
         heading: 0.0,
         pitch:   Cesium.Math.toRadians(-90),
         roll:    0.0,
       },
-      duration: 1.4,
     });
   </script>
 </body>

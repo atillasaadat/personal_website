@@ -403,5 +403,6 @@ const thumbOf = (src: string) =>
       play();
     });
   }
-  document.addEventListener('astro:page-load', initAutoGalleries);
+  import { onPageReady } from '../lib/page-ready';
+  onPageReady(initAutoGalleries);
 </script>
