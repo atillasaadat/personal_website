@@ -1,8 +1,9 @@
 ---
 // Image gallery matching the blog-post gallery: one main stage image plus a
 // clickable thumbnail strip, auto-advance with a progress ring, and a
-// click-to-zoom lightbox. Only the current full image is loaded at a time
-// (thumbnails are tiny WebPs), so the page stays light. One instance per page.
+// click-to-expand into the site's shared image viewer (src/lib/lightbox.ts).
+// Only the current full image is loaded at a time (thumbnails are tiny WebPs),
+// so the page stays light. One instance per page.
 interface Props {
   images: { src: string; caption: string }[];
   interval?: number;
@@ -65,17 +66,6 @@ const thumbOf = (src: string) =>
     </div>
   </div>
 </figure>
-
-<!-- Shared lightbox (one per page) -->
-<div class="ag-lightbox" hidden>
-  <button class="lb-close" type="button" aria-label="Close">✕</button>
-  <button class="lb-nav lb-prev" type="button" aria-label="Previous">‹</button>
-  <figure class="lb-figure">
-    <img class="lb-img" src={images[0].src} alt="" />
-    <figcaption class="lb-cap"></figcaption>
-  </figure>
-  <button class="lb-nav lb-next" type="button" aria-label="Next">›</button>
-</div>
 
 <style>
   .ag { margin: 0; }
@@ -229,46 +219,6 @@ const thumbOf = (src: string) =>
   .ag.is-paused .ag-ring circle { animation-play-state: paused; }
   @keyframes ag-ring { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
 
-  /* Lightbox */
-  .ag-lightbox {
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--overlay-bg);
-    padding: 2rem 3.5rem;
-  }
-  .ag-lightbox[hidden] { display: none; }
-  .lb-figure { margin: 0; max-width: 100%; max-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
-  .lb-img { max-width: 100%; max-height: 82vh; width: auto; border-radius: var(--radius); border: 1px solid var(--line-strong); }
-  .lb-cap { color: var(--text-1); font-size: 0.9rem; text-align: center; max-width: 60ch; }
-  .lb-close, .lb-nav {
-    position: absolute;
-    background: var(--surface);
-    border: 1px solid var(--line-strong);
-    color: var(--text-0);
-    border-radius: 50%;
-    width: 44px;
-    height: 44px;
-    font-size: 1.4rem;
-    line-height: 1;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-    transition: border-color 0.2s ease, color 0.2s ease;
-  }
-  .lb-close:hover, .lb-nav:hover { border-color: var(--accent); color: var(--accent); }
-  .lb-close { top: 1rem; right: 1rem; }
-  .lb-prev { left: 0.6rem; top: 50%; transform: translateY(-50%); }
-  .lb-next { right: 0.6rem; top: 50%; transform: translateY(-50%); }
-  @media (max-width: 560px) {
-    .ag-lightbox { padding: 1rem; }
-    .lb-prev { left: 0.4rem; }
-    .lb-next { right: 0.4rem; }
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .ag-main { transition: none; }
     .ag.is-playing .ag-ring circle { animation: none; }
@@ -291,11 +241,6 @@ const thumbOf = (src: string) =>
       const thumbs = Array.from(root.querySelectorAll<HTMLButtonElement>('.ag-thumb'));
       const items = thumbs.map((t) => ({ src: t.dataset.full || '', cap: t.dataset.cap || '' }));
       if (!items.length) return;
-
-      // Lightbox is the gallery's next sibling.
-      const lb = root.nextElementSibling as HTMLElement;
-      const lbImg = lb?.querySelector<HTMLImageElement>('.lb-img');
-      const lbCap = lb?.querySelector<HTMLElement>('.lb-cap');
 
       let cur = 0;
       let playing = false;
@@ -379,30 +324,20 @@ const thumbOf = (src: string) =>
       nextBtn?.addEventListener('click', () => { stop(); show(cur + 1); });
       updateArrows(); // initial state: prev hidden on the first image
 
-      if (lb && lbImg && lbCap) {
-        const syncLb = () => { lbImg.src = items[cur].src; lbImg.alt = items[cur].cap; lbCap.textContent = items[cur].cap; };
-        const open = () => { syncLb(); lb.removeAttribute('hidden'); document.body.style.overflow = 'hidden'; };
-        const close = () => { lb.setAttribute('hidden', ''); document.body.style.overflow = ''; };
-        root.querySelector('.ag-zoom')!.addEventListener('click', () => { stop(); open(); });
-        lb.querySelector('.lb-close')!.addEventListener('click', close);
-        lb.querySelector('.lb-prev')!.addEventListener('click', () => { show(cur - 1); syncLb(); });
-        lb.querySelector('.lb-next')!.addEventListener('click', () => { show(cur + 1); syncLb(); });
-        lb.addEventListener('click', (e) => { if (e.target === lb) close(); });
-        (window as any).__agKey && document.removeEventListener('keydown', (window as any).__agKey);
-        const onKey = (e: KeyboardEvent) => {
-          if (lb.hasAttribute('hidden')) return;
-          if (e.key === 'Escape') close();
-          else if (e.key === 'ArrowLeft') { show(cur - 1); syncLb(); }
-          else if (e.key === 'ArrowRight') { show(cur + 1); syncLb(); }
-        };
-        (window as any).__agKey = onKey;
-        document.addEventListener('keydown', onKey);
-      }
+      // Expanding hands the whole set to the site's shared image viewer
+      // (src/lib/lightbox.ts); browsing there moves this gallery too, so it is
+      // on the same image once the viewer closes.
+      bindLightbox(
+        root.querySelector<HTMLElement>('.ag-zoom')!,
+        () => { stop(); return { items: items.map((im) => ({ src: im.src, caption: im.cap })), index: cur }; },
+        { onChange: show },
+      );
 
       preload(1);
       play();
     });
   }
   import { onPageReady } from '../lib/page-ready';
+  import { bindLightbox } from '../lib/lightbox';
   onPageReady(initAutoGalleries);
 </script>

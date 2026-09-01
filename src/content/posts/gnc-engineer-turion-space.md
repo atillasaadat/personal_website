@@ -103,7 +103,7 @@ The paper is the formal write-up of the **NEI Optimizer** described above: it in
 
 Read the full [📄 **paper (PDF)**](https://www.researchgate.net/publication/395773467_End-to-End_Autonomous_Mission_Planning_and_Spacecraft_Attitude_Optimization_for_Resident_Space_Object_Imaging) or the [🖼️ **poster (PDF)**](https://www.researchgate.net/publication/395773552_End-to-End_Autonomous_Mission_Planning_and_Spacecraft_Attitude_Optimization_for_Resident_Space_Object_Imaging_Motivation_and_Objectives) on ResearchGate. The poster is also shown below; click it to expand and zoom in.
 
-<figure class="figure-single figure-zoom">
+<figure class="figure-single">
   <img src="/media/gnc-engineer-turion-space/img07.jpg" alt="AMOS 2025 poster: End-to-End Autonomous Mission Planning and Spacecraft Attitude Optimization for Resident Space Object Imaging" loading="lazy" />
   <figcaption>AMOS 2025 poster (click to expand)</figcaption>
 </figure>

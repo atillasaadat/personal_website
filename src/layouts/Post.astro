@@ -175,6 +175,15 @@ const breadcrumbLd = {
     // Manually choosing an image stops the slideshow until the user presses play.
     function manualShow(k: number) { stopAuto(); show(k); }
 
+    // Expanding the stage image opens the whole run in the shared viewer, and
+    // browsing there moves this gallery too, so it matches on close.
+    mainImg.classList.add('zoomable');
+    bindLightbox(
+      mainImg,
+      () => ({ items: imgs.map((im) => ({ src: im.src, caption: im.alt })), index: cur }),
+      { onChange: (i) => manualShow(i) },
+    );
+
     thumbs.forEach((t) => t.addEventListener('click', () => manualShow(Number(t.dataset.i))));
     toggle.addEventListener('click', () => (timer !== null ? stopAuto() : startAuto()));
     g.addEventListener('keydown', (e) => {
@@ -304,57 +313,22 @@ const breadcrumbLd = {
     });
   }
 
-  // Lightbox for large, detail-heavy images (posters, diagrams) marked with
-  // <figure class="figure-zoom">: click opens the image fit to the viewport,
-  // clicking the image toggles a 1:1 zoom (scrollable, centered on the click),
-  // Esc / backdrop / the close button dismiss it. The <dialog> lives on <body>
-  // so its styles are in global.css (Astro's scoped styles would not apply).
-  function ensureLightbox(): HTMLDialogElement {
-    let dlg = document.getElementById('lightbox') as HTMLDialogElement | null;
-    if (dlg) return dlg;
-    dlg = document.createElement('dialog');
-    dlg.id = 'lightbox';
-    dlg.className = 'lightbox';
-    dlg.innerHTML = `
-      <button class="lightbox-close" type="button" aria-label="Close">&times;</button>
-      <div class="lightbox-scroll"><img class="lightbox-img" alt="" /></div>
-      <p class="lightbox-hint">Click image to zoom &middot; Esc to close</p>`;
-    const scroll = dlg.querySelector('.lightbox-scroll') as HTMLElement;
-    const img = dlg.querySelector('.lightbox-img') as HTMLImageElement;
-    dlg.querySelector('.lightbox-close')!.addEventListener('click', () => dlg!.close());
-    // Clicking the dark backdrop (anything but the image) closes.
-    dlg.addEventListener('click', (e) => {
-      if (e.target !== img) dlg!.close();
-    });
-    img.addEventListener('click', (e) => {
-      const r = img.getBoundingClientRect();
-      const fx = (e.clientX - r.left) / r.width;
-      const fy = (e.clientY - r.top) / r.height;
-      const zoomed = dlg!.classList.toggle('zoomed');
-      if (zoomed) {
-        scroll.scrollLeft = fx * img.naturalWidth - scroll.clientWidth / 2;
-        scroll.scrollTop = fy * img.naturalHeight - scroll.clientHeight / 2;
-      }
-    });
-    dlg.addEventListener('close', () => {
-      dlg!.classList.remove('zoomed');
-      img.removeAttribute('src');
-    });
-    document.body.appendChild(dlg);
-    return dlg;
-  }
-
-  function bindZoomFigures() {
-    document.querySelectorAll<HTMLImageElement>('.post-body .figure-zoom img').forEach((src) => {
-      if (src.dataset.zoomBound) return;
-      src.dataset.zoomBound = '1';
-      src.addEventListener('click', () => {
-        const dlg = ensureLightbox();
-        const img = dlg.querySelector('.lightbox-img') as HTMLImageElement;
-        img.src = src.currentSrc || src.src;
-        img.alt = src.alt;
-        dlg.showModal();
-      });
+  // Every image in a post expands into the shared site viewer
+  // (src/lib/lightbox.ts): standalone figures open on their own, and an image
+  // inside a gallery opens with the rest of that gallery so the reader can
+  // browse the run full size. Gallery thumbnails (which switch the stage
+  // image) and linked images (which follow their link) are left alone.
+  function bindPostImages() {
+    const prose = document.querySelector('.post-body');
+    if (!prose) return;
+    prose.querySelectorAll<HTMLImageElement>('figure img').forEach((img) => {
+      if (img.closest('a')) return;
+      const caption = img.closest('figure')?.querySelector('figcaption')?.textContent?.trim();
+      img.classList.add('zoomable');
+      bindLightbox(img, () => ({
+        items: [{ src: img.currentSrc || img.src, caption: caption || img.alt }],
+        index: 0,
+      }));
     });
   }
 
@@ -383,11 +357,12 @@ const breadcrumbLd = {
 
   // Re-run on every page view, including client-side navigations (ClientRouter).
   import { onPageReady } from '../lib/page-ready';
+  import { bindLightbox } from '../lib/lightbox';
   onPageReady(() => {
     buildGalleries();
     buildFigures();
     centerMediaCaptions();
-    bindZoomFigures();
+    bindPostImages();
     lazyAutoplayVideos();
   });
 

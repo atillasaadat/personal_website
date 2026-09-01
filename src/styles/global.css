@@ -204,10 +204,11 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
 }
 .prose figure.figure-single figcaption a { color: var(--accent-2); }
 
-/* Click-to-expand figure (use <figure class="figure-zoom"> in post markdown for
-   posters/diagrams too dense to read at column width); the lightbox <dialog>
-   itself is created by the post layout script and appended to <body>. */
-.prose figure.figure-zoom img { cursor: zoom-in; }
+/* The site's shared image viewer. Every expandable image (post figures, post
+   galleries, the AutoGallery on /about and /research) is marked .zoomable and
+   opens the same <dialog>, built by src/lib/lightbox.ts and appended to <body>
+   where scoped component styles would not reach it. */
+.zoomable { cursor: zoom-in; }
 .lightbox {
   position: fixed;
   inset: 0;
@@ -222,11 +223,22 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
      ::backdrop (some engines render the backdrop lighter than specified). */
   background: rgba(0, 3, 8, 0.94);
   color: var(--text-0);
+  flex-direction: column;
 }
+/* Image area on top, caption bar below: a column rather than overlays, so a
+   long caption can never sit on top of the image or run off the screen. The
+   display must be set on [open] only: an author `display` on the bare dialog
+   beats the UA's `dialog:not([open]) { display: none }` whatever its
+   specificity, and the closed dialog would then cover the page. */
+.lightbox[open] { display: flex; }
 .lightbox::backdrop { background: rgba(0, 3, 8, 0.94); }
 .lightbox-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
-  height: 100%;
+  /* Inset so the fitted image clears the close button and the prev/next arrows
+     instead of sliding underneath them. */
+  padding: 3.25rem 3.5rem 0.5rem;
   overflow: auto;
   display: flex;
   align-items: center;
@@ -240,8 +252,9 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   cursor: zoom-in;
   box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
 }
-/* 1:1 zoom: drop the fit constraints and let the wrapper scroll/pan. */
-.lightbox.zoomed .lightbox-scroll { display: block; }
+/* 1:1 zoom: drop the fit constraints and give the wrapper the whole area to
+   scroll/pan in. */
+.lightbox.zoomed .lightbox-scroll { display: block; padding: 0; }
 .lightbox.zoomed .lightbox-img { max-width: none; max-height: none; cursor: zoom-out; }
 .lightbox-close {
   position: fixed;
@@ -259,11 +272,31 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   cursor: pointer;
 }
 .lightbox-close:hover { border-color: var(--accent); color: var(--accent); }
+/* Caption + key hints, stacked in a bar across the bottom of the viewport. */
+.lightbox-bar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: min(60ch, calc(100vw - 1.5rem));
+  margin: 0 auto;
+  padding: 0.25rem 0 0.9rem;
+  pointer-events: none;
+}
+.lightbox-cap {
+  margin: 0;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius);
+  background: rgba(10, 14, 22, 0.8);
+  color: var(--text-0);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  text-align: center;
+  text-wrap: pretty;
+}
+.lightbox-cap[hidden] { display: none; }
 .lightbox-hint {
-  position: fixed;
-  left: 50%;
-  bottom: 0.75rem;
-  transform: translateX(-50%);
   margin: 0;
   padding: 0.3rem 0.8rem;
   border-radius: 999px;
@@ -272,8 +305,40 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   font-family: var(--font-mono);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
-  white-space: nowrap;
-  pointer-events: none;
+  text-align: center;
+}
+/* Previous / next, shown only when the viewer was opened on a set of images. */
+.lightbox-nav {
+  position: fixed;
+  top: 50%;
+  z-index: 1;
+  transform: translateY(-50%);
+  display: none;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(10, 14, 22, 0.8);
+  color: var(--text-0);
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.lightbox.has-nav .lightbox-nav { display: grid; }
+/* A single image has no arrows to make room for, so give it the full width. */
+.lightbox:not(.has-nav) .lightbox-scroll { padding-left: 0.75rem; padding-right: 0.75rem; }
+.lightbox-nav:hover { border-color: var(--accent); color: var(--accent); }
+.lightbox-prev { left: 0.75rem; }
+.lightbox-next { right: 0.75rem; }
+/* Zoomed 1:1 the image is dragged around under the arrows, so get them out of
+   the way and let the reader pan the full frame. */
+.lightbox.zoomed .lightbox-nav { display: none; }
+@media (max-width: 560px) {
+  .lightbox-nav { width: 2.2rem; height: 2.2rem; font-size: 1.4rem; }
+  .lightbox-prev { left: 0.25rem; }
+  .lightbox-next { right: 0.25rem; }
+  .lightbox-scroll { padding: 3rem 2.7rem 0.5rem; }
 }
 
 /* Image floated to the right of body text (use <figure class="figure-float">

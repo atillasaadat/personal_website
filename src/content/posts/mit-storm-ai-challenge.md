@@ -8,7 +8,7 @@ highlight: "4th place: MIT ARCLab STORM-AI Challenge"
 highlightHref: "https://aeroastro.mit.edu/arclab/aichallenge/"
 ---
 
-![](/media/mit-storm-ai-challenge/img00.jpg)
+<video autoplay muted loop playsinline preload="auto" poster="/media/mit-storm-ai-challenge/img00.jpg"><source src="/media/mit-storm-ai-challenge/vid00.mp4" type="video/mp4" /></video>
 
 ## **Real‑Time Thermospheric Density Forecasting with a BiGRU‑Attention Network**
 
