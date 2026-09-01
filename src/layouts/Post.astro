@@ -1,7 +1,7 @@
 ---
 import Base from './Base.astro';
 import type { CollectionEntry } from 'astro:content';
-import { addImgSizes, deferAutoplayVideos } from '../lib/img-size.mjs';
+import { addImgSizes, deferAutoplayVideos, gateCookieEmbeds } from '../lib/img-size.mjs';
 
 interface Props {
   post: CollectionEntry<'posts'>;
@@ -40,7 +40,7 @@ const articleLd = {
 };
 // Render the post body up front so every /media/ image gets width/height
 // (see src/lib/img-size.mjs); this is what stops images shifting the layout.
-const body = deferAutoplayVideos(await addImgSizes(await Astro.slots.render('default')));
+const body = gateCookieEmbeds(deferAutoplayVideos(await addImgSizes(await Astro.slots.render('default'))));
 
 const breadcrumbLd = {
   '@type': 'BreadcrumbList',
@@ -104,13 +104,13 @@ const breadcrumbLd = {
     );
   }
 
-  function createGallery(imgs: { src: string; alt: string }[]) {
+  function createGallery(imgs: { src: string; alt: string; w: string; h: string }[]) {
     const g = document.createElement('div');
     g.className = 'gallery';
     g.tabIndex = 0;
     g.innerHTML = `
       <div class="gallery-stage">
-        <img class="gallery-img" src="${imgs[0].src}" alt="${esc(imgs[0].alt)}" />
+        <img class="gallery-img" src="${imgs[0].src}" alt="${esc(imgs[0].alt)}"${imgs[0].w && imgs[0].h ? ` width="${imgs[0].w}" height="${imgs[0].h}"` : ''} />
       </div>
       <p class="gallery-caption">${esc(imgs[0].alt)}</p>
       <div class="gallery-thumbs">
@@ -153,6 +153,11 @@ const breadcrumbLd = {
       cur = (k + imgs.length) % imgs.length;
       mainImg.src = imgs[cur].src;
       mainImg.alt = imgs[cur].alt;
+      // Keep the reserved box matched to the image now on show.
+      if (imgs[cur].w && imgs[cur].h) {
+        mainImg.setAttribute('width', imgs[cur].w);
+        mainImg.setAttribute('height', imgs[cur].h);
+      }
       cap.textContent = imgs[cur].alt;
       counter.textContent = String(cur + 1);
       thumbs.forEach((t, ti) => t.classList.toggle('active', ti === cur));
@@ -204,12 +209,14 @@ const breadcrumbLd = {
     while (i < nodes.length) {
       if (!isImageParagraph(nodes[i])) { i++; continue; }
       let j = i;
-      const imgs: { src: string; alt: string }[] = [];
+      const imgs: { src: string; alt: string; w: string; h: string }[] = [];
       while (j < nodes.length && isImageParagraph(nodes[j])) {
         const img = nodes[j].children[0] as HTMLImageElement;
         const src = img.getAttribute('src') || '';
         const alt = img.getAttribute('alt') || '';
-        if (!imgs.length || imgs[imgs.length - 1].src !== src) imgs.push({ src, alt });
+        const w = img.getAttribute('width') || '';
+        const h = img.getAttribute('height') || '';
+        if (!imgs.length || imgs[imgs.length - 1].src !== src) imgs.push({ src, alt, w, h });
         j++;
       }
       if (imgs.length >= 2) {
@@ -332,6 +339,42 @@ const breadcrumbLd = {
     });
   }
 
+  // LinkedIn / X embeds were replaced at build time with a placeholder (see
+  // gateCookieEmbeds in src/lib/img-size.mjs) so they set no cookies until the
+  // reader asks for them. Swap in the real iframe on click.
+  function bindConsentEmbeds() {
+    document.querySelectorAll<HTMLElement>('.post-body .embed-consent').forEach((box) => {
+      const btn = box.querySelector('.embed-consent-btn');
+      if (!btn || box.dataset.bound) return;
+      box.dataset.bound = '1';
+      btn.addEventListener('click', () => {
+        const frame = document.createElement('iframe');
+        frame.src = box.dataset.embedSrc || '';
+        frame.title = box.dataset.embedTitle || '';
+        frame.height = box.dataset.embedHeight || '620';
+        frame.setAttribute('frameborder', '0');
+        frame.setAttribute('allowfullscreen', '');
+        frame.setAttribute('loading', 'lazy');
+        box.replaceWith(frame);
+      });
+    });
+  }
+
+  // A wide table scrolls sideways inside its own box, which a mouse can reach
+  // but a keyboard cannot: without a tab stop the columns past the right edge
+  // are unreachable (axe: scrollable-region-focusable). Give whichever element
+  // actually scrolls a tab stop, and drop it again when it no longer overflows
+  // so narrow tables do not add a pointless stop. No role is set: role="region"
+  // on a <table> would replace its table semantics for screen readers.
+  function syncScrollableTables() {
+    const prose = document.querySelector('.post-body');
+    if (!prose) return;
+    for (const el of Array.from(prose.querySelectorAll<HTMLElement>('table, .table-center'))) {
+      if (el.scrollWidth > el.clientWidth + 1) el.tabIndex = 0;
+      else el.removeAttribute('tabindex');
+    }
+  }
+
   // Autoplaying post videos were rewritten at build time to data-autoplay +
   // preload="none" (see src/lib/img-size.mjs) so they cost nothing at page
   // load. Play them only once they scroll near the viewport, and pause them
@@ -364,7 +407,17 @@ const breadcrumbLd = {
     centerMediaCaptions();
     bindPostImages();
     lazyAutoplayVideos();
+    syncScrollableTables();
+    bindConsentEmbeds();
   });
+
+  // Overflow depends on the viewport, so re-check when it changes.
+  let resizeTimer: number | undefined;
+  const onResize = () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(syncScrollableTables, 150);
+  };
+  window.addEventListener('resize', onResize);
 
   // Clear any running slideshow timers before the DOM is swapped on navigation.
   document.addEventListener('astro:before-swap', () => {
@@ -415,4 +468,6 @@ const breadcrumbLd = {
     font-family: var(--font-mono);
     font-size: 0.9rem;
   }
+  /* Keeps the type size but grows the hit area to the 24px WCAG 2.2 minimum. */
+  .post-foot a { display: inline-flex; align-items: center; min-height: 24px; }
 </style>

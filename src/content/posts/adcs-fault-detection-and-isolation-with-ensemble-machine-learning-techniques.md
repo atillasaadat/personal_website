@@ -18,9 +18,9 @@ Proposed FDI simulation setup
 
 **Abstract** - The primary objective of this study is to explore novel applications of data-driven machine learning methods for isolation of nonlinear systems with a case study for an in-orbit closed-loop controlled satellite with reaction wheels as actuators. High-fidelity models of the three-axis controlled satellite are developed to provide an abundance of data for both healthy and various faulty conditions of the satellite. These data are then used as input for the proposed data-driven fault isolation method. Once a fault is detected, the fault isolation module is activated, where it employs a machine learning technique that incorporates ensemble methods involving random forests, decision trees, and nearest neighbors. Results of the classified faulty condition are then cross-validated using k-fold and leave-one-out methods. Performance comparison among different combinations for the ensemble architecture shows promising fault isolation of the non-linear systems using ensemble methods.
 
-### **ICASSE 2019 Presentation at University of Toronto**
+## **ICASSE 2019 Presentation at University of Toronto**
 
-### **IAC 2020 Presentation**
+## **IAC 2020 Presentation**
 
 <video controls preload="metadata" playsinline><source src="/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/vid00.mp4" type="video/mp4" /></video>
 

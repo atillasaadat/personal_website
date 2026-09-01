@@ -4,6 +4,7 @@ import Base from '../layouts/Base.astro';
 import ProjectCard from '../components/ProjectCard.astro';
 import SatMap from '../components/SatMap.astro';
 import Socials from '../components/Socials.astro';
+import { imgSize } from '../lib/img-size.mjs';
 
 const posts = (await getCollection('posts')).sort(
   (a, b) =>
@@ -86,16 +87,21 @@ const awardsData = [
   },
 ];
 
-const awards = awardsData
+// Stamp each logo's intrinsic size so the tile reserves its box before the
+// (lazy-loaded) image arrives, instead of shifting the card as it lands.
+const awards = await Promise.all(
+  awardsData
   .sort((a, b) => b.date.localeCompare(a.date))
-  .map((a) => ({
+  .map(async (a) => ({
     ...a,
+    dim: await imgSize(a.logo),
     dateLabel: new Date(`${a.date}-01T00:00:00Z`).toLocaleDateString('en-US', {
       month: 'short',
       year: 'numeric',
       timeZone: 'UTC',
     }),
-  }));
+  })),
+);
 ---
 <Base title="Atilla Saadat | Spacecraft GNC Engineer" image="/media/profile.jpg">
   <!-- ============ HERO ============ -->
@@ -172,15 +178,15 @@ const awards = awardsData
         <h2>Awards</h2>
       </div>
       <div class="grid awards-grid">
-        {awards.map(({ logo, title, body, href, links, dateLabel, light }) => (
+        {awards.map(({ logo, title, body, href, links, dateLabel, light, dim }) => (
           <div class={`award hud-card${light ? ' light-logo' : ''}`}>
             {href ? (
               <a class="award-logo" href={href} target="_blank" rel="noopener" aria-label={title}>
-                <img src={logo} alt={title} loading="lazy" decoding="async" />
+                <img src={logo} alt={title} width={dim?.width} height={dim?.height} loading="lazy" decoding="async" />
               </a>
             ) : (
               <span class="award-logo">
-                <img src={logo} alt={title} loading="lazy" decoding="async" />
+                <img src={logo} alt={title} width={dim?.width} height={dim?.height} loading="lazy" decoding="async" />
               </span>
             )}
             <p class="award-date">{dateLabel}</p>

@@ -218,7 +218,7 @@ const sections = [
   <section class="container section">
     <div class="section-head">
       <p class="kicker">// RESEARCH</p>
-      <h2>Research &amp; Publications</h2>
+      <h1>Research &amp; Publications</h1>
     </div>
 
     <div class="research-split">
@@ -245,17 +245,17 @@ const sections = [
       </div>
     </div>
 
-    <h3 class="block-head">Research Interests</h3>
+    <h2 class="block-head">Research Interests</h2>
     <ul class="chips">
       {interests.map((i) => <li class="chip">{i}</li>)}
     </ul>
 
-    <h3 class="block-head">Research Positions</h3>
+    <h2 class="block-head">Research Positions</h2>
     <div class="positions">
       {positions.map((p) => (
         <article class="position hud-card">
           <div class="pos-head">
-            <h4>{p.role}</h4>
+            <h3>{p.role}</h3>
             <span class="pos-period mono">{p.period}</span>
           </div>
           <p class="pos-org">{p.org}</p>
@@ -269,7 +269,7 @@ const sections = [
 
     {sections.map((sec) => (
       <section class="pub-block">
-        <h3 class="block-head">{sec.label}</h3>
+        <h2 class="block-head">{sec.label}</h2>
         <ol class="cites">
           {sec.items.map((c: any) => (
             <li class="cite">
@@ -294,7 +294,7 @@ const sections = [
     ))}
 
     <section class="pub-block">
-      <h3 class="block-head">Academic Service</h3>
+      <h2 class="block-head">Academic Service</h2>
       <ul class="service">
         {service.map((s) => <li>{s}</li>)}
       </ul>
@@ -373,7 +373,7 @@ const sections = [
     gap: 1rem;
     flex-wrap: wrap;
   }
-  .pos-head h4 { margin: 0; font-size: 1.12rem; }
+  .pos-head h3 { margin: 0; font-size: 1.12rem; }
   .pos-period { font-size: 0.78rem; color: var(--text-2); white-space: nowrap; }
   .pos-org { margin: 0.2rem 0 0.15rem; color: var(--text-1); }
   .pos-advisor { font-size: 0.78rem; color: var(--accent-2); margin: 0 0 0.7rem; }
@@ -413,6 +413,10 @@ const sections = [
   .cite-link {
     font-family: var(--font-mono);
     font-size: 0.78rem;
+    /* Keeps the type size but grows the hit area to the 24px WCAG 2.2 minimum. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
   }
   .cite-post { color: var(--accent-2); }
   .badge {

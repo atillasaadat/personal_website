@@ -4,13 +4,16 @@ const cvPath = '/files/Atilla_Saadat_CV.pdf';
 // Self-hosted Mozilla PDF.js viewer (see public/pdfjs/), the same engine
 // behind Firefox's built-in PDF viewer: thumbnails, outline, find, zoom,
 // print, and download, all rendered from the file already on this origin.
-const viewerSrc = `/pdfjs/web/viewer.html?file=${encodeURIComponent(cvPath)}`;
+// #pagemode=none is required: PDF.js opens its outline panel on every load,
+// and on a phone that panel is an overlay, not a column, so it covers half
+// the CV. The reader can still open it from the toolbar.
+const viewerSrc = `/pdfjs/web/viewer.html?file=${encodeURIComponent(cvPath)}#pagemode=none`;
 ---
 <Base title="CV | Atilla Saadat" description="Curriculum vitae of Atilla Saadat, Spacecraft GNC Engineer.">
   <section class="container section">
     <div class="section-head">
       <p class="kicker">// CURRICULUM VITAE</p>
-      <h2>CV</h2>
+      <h1>CV</h1>
       <p class="actions">
         <a class="btn" href={cvPath} download>Download PDF ↓</a>
         <a class="btn" href={cvPath} target="_blank" rel="noopener">Open in new tab ↗</a>

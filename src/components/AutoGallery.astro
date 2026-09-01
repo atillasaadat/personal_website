@@ -4,6 +4,8 @@
 // click-to-expand into the site's shared image viewer (src/lib/lightbox.ts).
 // Only the current full image is loaded at a time (thumbnails are tiny WebPs),
 // so the page stays light. One instance per page.
+import { imgSize } from '../lib/img-size.mjs';
+
 interface Props {
   images: { src: string; caption: string }[];
   interval?: number;
@@ -11,6 +13,9 @@ interface Props {
   label?: string;
 }
 const { images, interval = 4500, ratio = '4 / 5', label = 'Photo gallery' } = Astro.props;
+// Intrinsic sizes for the stage image, so it is never an unsized image; the
+// script keeps them in step as the gallery swaps between differing shapes.
+const sized = await Promise.all(images.map(async (im) => ({ ...im, dim: await imgSize(im.src) })));
 // Tiny WebP thumbnail next to each full image, in a sibling thumbs/ folder:
 // /media/<dir>/x.jpg -> /media/<dir>/thumbs/x.webp
 const thumbOf = (src: string) =>
@@ -27,8 +32,10 @@ const thumbOf = (src: string) =>
     <button class="ag-zoom" type="button" aria-label="View image full size">
       <img
         class="ag-main"
-        src={images[0].src}
-        alt={images[0].caption}
+        src={sized[0].src}
+        alt={sized[0].caption}
+        width={sized[0].dim?.width}
+        height={sized[0].dim?.height}
         decoding="async"
         fetchpriority="low"
       />
@@ -49,7 +56,7 @@ const thumbOf = (src: string) =>
       <svg class="ag-ico ag-ico-play" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"/></svg>
     </button>
     <div class="ag-thumbs" role="tablist" aria-label="Choose image">
-      {images.map((im, i) => (
+      {sized.map((im, i) => (
         <button
           class:list={['ag-thumb', { 'is-active': i === 0 }]}
           type="button"
@@ -57,6 +64,8 @@ const thumbOf = (src: string) =>
           data-i={i}
           data-full={im.src}
           data-cap={im.caption}
+          data-w={im.dim?.width}
+          data-h={im.dim?.height}
           aria-selected={i === 0 ? 'true' : 'false'}
           aria-label={`View image ${i + 1}`}
         >
@@ -239,7 +248,7 @@ const thumbOf = (src: string) =>
       const toggle = root.querySelector<HTMLButtonElement>('.ag-toggle')!;
       const strip = root.querySelector<HTMLElement>('.ag-thumbs')!;
       const thumbs = Array.from(root.querySelectorAll<HTMLButtonElement>('.ag-thumb'));
-      const items = thumbs.map((t) => ({ src: t.dataset.full || '', cap: t.dataset.cap || '' }));
+      const items = thumbs.map((t) => ({ src: t.dataset.full || '', cap: t.dataset.cap || '', w: t.dataset.w || '', h: t.dataset.h || '' }));
       if (!items.length) return;
 
       let cur = 0;
@@ -274,6 +283,11 @@ const thumbOf = (src: string) =>
         const swap = () => {
           main.src = items[cur].src;
           main.alt = items[cur].cap;
+          // Keep the reserved box matched to the image now on show.
+          if (items[cur].w && items[cur].h) {
+            main.setAttribute('width', items[cur].w);
+            main.setAttribute('height', items[cur].h);
+          }
           requestAnimationFrame(() => root.classList.remove('is-swapping'));
         };
         if (reduce) swap();

@@ -15,7 +15,7 @@ highlightHref: "https://www.linkedin.com/posts/on-6122023-we-launched-droid001-t
 
 At Turion Space (2022 to 2025), we pushed the boundaries of space technology, particularly with our work on space situational awareness and orbital debris mitigation. As a Guidance, Navigation, and Control (GNC) Engineer, I developed the GNC systems and ensured the operational success of our first satellite **Droid.001**, launched in June 2023 on SpaceX's [Transporter-8](https://www.spacex.com/launches/transporter8) rideshare, and its larger successor **Droid.002**, launched on March 15, 2025 on SpaceX's [Transporter-13](https://www.spacex.com/launches/transporter13) rideshare from Vandenberg Space Force Base. This post provides a brief look at my contributions to both missions, focusing on significant moments, launch experiences, and my role in pushing the boundaries of space exploration.
 
-#### **The Journey of Droid.001: From Launch to Full Commissioning**
+## **The Journey of Droid.001: From Launch to Full Commissioning**
 
 Droid.001 marks a significant milestone for Turion Space as our first operational satellite, showcasing critical capabilities that pave the way for future missions. From launch to on-orbit commissioning, I was directly involved in ensuring the satellite's success from a GNC perspective. I conducted functional testing and assessed performance metrics on the GNC hardware to ensure optimal operation and resolve technical challenges throughout the mission.
 
@@ -46,7 +46,7 @@ The **automated astrodynamics and attitude control tools** I developed during t
   </figure>
 </div>
 
-#### **In-Situ NEI Images of the Moon taken from Droid.001**
+### **In-Situ NEI Images of the Moon taken from Droid.001**
 
 <div class="li-embeds">
   <figure class="li-embed">
@@ -85,7 +85,7 @@ The **automated astrodynamics and attitude control tools** I developed during t
   </figure>
 </div>
 
-### **The Next Evolution: Droid.002 and Beyond**
+## **The Next Evolution: Droid.002 and Beyond**
 
 Building on the success of Droid.001, we took the next step with **Droid.002**: a 90 kg spacecraft, nearly three times the mass of Droid.001, with more capable hardware, improved imaging performance, iodine-fueled electric propulsion, and new features for tracking and capturing images of RSOs. I carried its GNC system through Assembly, Integration, and Test (AIT), with tasks ranging from SITL/HITL GNC hardware testing, radiation analysis, and ΔV budgeting for station-keeping and deorbit, and then through launch and on-orbit commissioning.
 
@@ -108,7 +108,7 @@ Read the full [📄 **paper (PDF)**](https://www.researchgate.net/publication/39
   <figcaption>AMOS 2025 poster (click to expand)</figcaption>
 </figure>
 
-#### **Pushing the Envelope with Turion Space**
+## **Pushing the Envelope with Turion Space**
 
 With Droid.001 and Droid.002 both flown and the lessons from each feeding into the next-generation Droid fleet, Turion's mission is to drive advancements in space situational awareness, debris orbit determination, and responsive satellite technology. Each new challenge provided an opportunity for innovation, and I’m proud of what we accomplished at Turion Space.
 

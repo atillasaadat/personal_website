@@ -36,6 +36,16 @@ function dimensions(src) {
 // them as soon as the tag is parsed, ahead of the images the visitor can
 // actually see. Rewrite them to data-autoplay + preload="none" in the HTML;
 // the post layout script plays/pauses them as they scroll into/out of view.
+/**
+ * Intrinsic size of a file in public/, for markup built outside the post
+ * pipeline (award and org logos, which are hand-written <img> tags in Astro
+ * components). Returns null when the file is missing, so callers can render
+ * without the attributes rather than fail the build.
+ */
+export async function imgSize(src) {
+  return (await dimensions(src)) ?? null;
+}
+
 export function deferAutoplayVideos(html) {
   return html.replace(/<video\b[^>]*\sautoplay(?:="[^"]*")?[^>]*>/g, (tag) =>
     tag
@@ -43,6 +53,47 @@ export function deferAutoplayVideos(html) {
       .replace(/\spreload="[^"]*"/, '')
       .replace(/^<video/, '<video preload="none"'),
   );
+}
+
+// LinkedIn and X embeds set tracking cookies the moment their iframe loads,
+// before the reader has done anything (six from LinkedIn alone: JSESSIONID,
+// bcookie, bscookie, lidc, __cf_bm, lang). Replace them at build time with a
+// click-to-load placeholder that carries the real iframe in data-* attributes;
+// the post layout swaps in the iframe only once the reader asks for it, so no
+// third party is contacted otherwise. YouTube already uses youtube-nocookie
+// and Google Slides sets none, so neither is gated.
+const COOKIE_EMBEDS = [
+  [/^(www\.)?linkedin\.com$/i, 'LinkedIn'],
+  [/^(platform|syndication)\.(twitter|x)\.com$/i, 'X'],
+];
+
+function attr(tag, name) {
+  const m = tag.match(new RegExp(`\\s${name}="([^"]*)"`, 'i'));
+  return m ? m[1] : '';
+}
+
+export function gateCookieEmbeds(html) {
+  return html.replace(/<iframe\b[^>]*><\/iframe>|<iframe\b[^>]*\/>/gi, (tag) => {
+    const src = attr(tag, 'src');
+    if (!src) return tag;
+    let host;
+    try { host = new URL(src).host; } catch { return tag; }
+    const hit = COOKIE_EMBEDS.find(([re]) => re.test(host));
+    if (!hit) return tag;
+    const provider = hit[1];
+    const title = attr(tag, 'title');
+    const height = attr(tag, 'height') || '620';
+    const esc = (v) => String(v).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    return (
+      `<div class="embed-consent" style="min-height:${esc(height)}px"` +
+      ` data-embed-src="${esc(src)}" data-embed-title="${esc(title)}"` +
+      ` data-embed-height="${esc(height)}" data-embed-provider="${esc(provider)}">` +
+      `<p class="embed-consent-note">${esc(title || `${provider} post`)}</p>` +
+      `<p class="embed-consent-sub">Loading this ${esc(provider)} post lets ${esc(provider)} set cookies in your browser.</p>` +
+      `<button type="button" class="embed-consent-btn">Load ${esc(provider)} post</button>` +
+      `</div>`
+    );
+  });
 }
 
 export async function addImgSizes(html) {

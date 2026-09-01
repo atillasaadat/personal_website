@@ -12,7 +12,7 @@
 
   --text-0: #e8eef9;
   --text-1: #aab8d4;
-  --text-2: #6f7fa0;
+  --text-2: #7080a1; /* 4.52:1 on --bg-1; #6f7fa0 was 4.45 and just missed AA */
 
   --accent: #5eead4;        /* telemetry teal */
   --accent-dim: rgba(94, 234, 212, 0.14);
@@ -123,6 +123,21 @@ h1, h2, h3, h4 {
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
+/* Links sitting inside running text are underlined, not just tinted. Colour
+   alone is not enough (WCAG 1.4.1): in the dark theme the link teal against
+   body text is only 1.34:1, far under the 3:1 needed to tell them apart
+   without it. Scoped to prose-like blocks so nav, buttons, cards, chips and
+   other standalone links keep their untouched look. */
+:is(.prose, .bio, .post-body) :is(p, li, figcaption, blockquote, dd, td, th) a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: from-font;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+:is(.prose, .bio, .post-body) :is(p, li, figcaption, blockquote, dd, td, th) a:hover {
+  text-decoration-color: currentColor;
+}
+
 img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
 
 ::selection { background: var(--accent-dim); color: var(--accent); }
@@ -147,7 +162,9 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
 .section[id] { scroll-margin-top: calc(-1 * clamp(3.5rem, 8vw, 6rem)); }
 
 .section-head { margin-bottom: 2.25rem; }
-.section-head h2 {
+/* The section heading is an <h1> when it names the page (/about, /cv,
+   /research) and an <h2> for sections within a page (Projects, Awards). */
+.section-head :is(h1, h2) {
   font-size: clamp(1.6rem, 3.5vw, 2.2rem);
   margin: 0.4rem 0 0;
 }
@@ -455,6 +472,50 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   font-size: 0.82rem;
   color: var(--text-1);
 }
+
+/* Click-to-load stand-in for embeds that would otherwise set third-party
+   cookies on page load (LinkedIn, X). Built by gateCookieEmbeds in
+   src/lib/img-size.mjs; the post layout swaps in the real iframe on click.
+   It reserves the iframe's height so the swap shifts nothing. */
+.prose .embed-consent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 1.5rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg-1);
+  text-align: center;
+}
+.prose .embed-consent-note {
+  margin: 0;
+  color: var(--text-0);
+  font-size: 0.95rem;
+  max-width: 40ch;
+}
+.prose .embed-consent-sub {
+  margin: 0;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  max-width: 46ch;
+}
+.prose .embed-consent-btn {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  padding: 0.55rem 1.1rem;
+  min-height: 24px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--accent);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.prose .embed-consent-btn:hover { border-color: var(--accent); }
 
 /* Image gallery (built client-side from runs of consecutive images).
    One main stage + a scrollable thumbnail strip, caption space reserved. */

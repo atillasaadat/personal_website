@@ -16,7 +16,7 @@ The cargo itself is small but high value: each capsule carries a pharmaceutical 
 
 *A Varda W-Series capsule streaking back through the atmosphere. This is the reentry environment my GNC work is built around.*
 
-#### **Why Reentry GNC Is Hard**
+## **Why Reentry GNC Is Hard**
 
 A Varda capsule spends weeks on orbit as a free-flying spacecraft, then has minutes to fly a ballistic, plasma-wrapped descent to a target on the ground. There is no second attempt and no go-around. Getting it right means the trajectory, the vehicle, and the navigation all have to be validated long before launch, then operated flawlessly on the day. That is the corner of the mission I own:
 
@@ -24,7 +24,7 @@ A Varda capsule spends weeks on orbit as a free-flying spacecraft, then has minu
 - **On-orbit GNC operations:** flying the vehicle as part of the operations team, from on-orbit checkouts through the deorbit burn and reentry.
 - **Post-flight analysis:** reconstructing what the vehicle actually did versus what we predicted, and folding those lessons back into the models for the next flight.
 
-#### **W-Series 4 & 5**
+## **W-Series 4 & 5**
 
 I led Monte Carlo simulations, trajectory design optimization, post-flight analysis, and on-orbit GNC operations for **W-Series 4**, and post-flight analysis for the **successful launch and reentry of W-Series 5**. Each flight in the W-Series tightens the loop between what we manufacture on-orbit and how reliably we can return it, and every reentry is a fresh, fully instrumented dataset to sharpen the next mission's predictions.
 
@@ -45,7 +45,7 @@ The team and I were on-console for the W-5 recovery, and there is nothing quite 
   </figure>
 </div>
 
-#### **What Reentry Looks Like**
+## **What Reentry Looks Like**
 
 Varda has flown a growing cadence of W-Series capsules. The footage below, from the W-2 capsule's Mach 25 return over the Koonibba Test Range in South Australia, captures the regime my GNC analysis is designed around: a small autonomous capsule trading orbital energy for heat, holding its corridor all the way down to a precise landing.
 
@@ -57,7 +57,7 @@ Varda has flown a growing cadence of W-Series capsules. The footage below, from 
 
 *Onboard capsule view of the full W-5 reentry, from orbit to ground in a matter of minutes.*
 
-#### **Next: Bus Block 2**
+## **Next: Bus Block 2**
 
 Beyond flying today's vehicles, I serve as the **GNC Responsible Engineer for Bus Block 2**, architecting the next generation of Varda reentry vehicles designed for **multi-vehicle operations and a higher mission cadence**. The goal is to make returning material from space routine: more capsules, flying more often, each one landing exactly where it should.
 

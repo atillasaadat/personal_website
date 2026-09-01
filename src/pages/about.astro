@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import AutoGallery from '../components/AutoGallery.astro';
+import { imgSize } from '../lib/img-size.mjs';
 
 const gallery = [
   { src: '/media/varda/VardaSpace_AtillaSaadat.jpg', caption: 'With a Varda W-Series capsule bus in the cleanroom' },
@@ -65,6 +66,13 @@ const affiliations = [
   'Aerospace Education Officer (2d Lt), Civil Air Patrol, Squadron 232 (2024 to present)',
   'Programs Chair, AIAA Orange County Section (2024 to present)',
 ];
+
+// Stamp each org logo's intrinsic size so the timeline rail reserves the box
+// before the (lazy-loaded) image lands, instead of shifting the row.
+const withLogoSize = (rows) =>
+  Promise.all(rows.map(async (t) => ({ ...t, dim: t.logo ? await imgSize(t.logo) : null })));
+const experienceRows = await withLogoSize(experience);
+const educationRows = await withLogoSize(education);
 ---
 <Base
   title="About | Atilla Saadat"
@@ -73,7 +81,7 @@ const affiliations = [
   <section class="container section">
     <div class="section-head">
       <p class="kicker">// ABOUT</p>
-      <h2>About Me</h2>
+      <h1>About Me</h1>
     </div>
 
     <div class="about-split">
@@ -119,11 +127,11 @@ const affiliations = [
       </div>
     </div>
 
-    <h3 class="block-head">Skills</h3>
+    <h2 class="block-head">Skills</h2>
     <div class="skills">
       {skills.map((s) => (
         <div class="skill-group hud-card">
-          <h4>{s.group}</h4>
+          <h3>{s.group}</h3>
           <ul>
             {s.items.map((it) => <li>{it}</li>)}
           </ul>
@@ -131,32 +139,32 @@ const affiliations = [
       ))}
     </div>
 
-    <h3 class="block-head">Experience</h3>
+    <h2 class="block-head">Experience</h2>
     <ol class="xp">
-      {experience.map((t) => (
+      {experienceRows.map((t) => (
         <li class="xp-item">
           <span class="xp-logo" aria-hidden="true">
-            {t.logo ? <img src={t.logo} alt="" loading="lazy" decoding="async" /> : <span class="xp-mono">{t.short}</span>}
+            {t.logo ? <img src={t.logo} alt="" width={t.dim?.width} height={t.dim?.height} loading="lazy" decoding="async" /> : <span class="xp-mono">{t.short}</span>}
           </span>
           <div class="xp-body">
             <span class="xp-period mono">{t.period}</span>
-            <h4 class="xp-role">{t.role}</h4>
+            <h3 class="xp-role">{t.role}</h3>
             <p class="xp-org"><a href={t.url} target="_blank" rel="noopener">{t.org}</a><span class="xp-place"> · {t.place}</span></p>
           </div>
         </li>
       ))}
     </ol>
 
-    <h3 class="block-head">Education</h3>
+    <h2 class="block-head">Education</h2>
     <ol class="xp">
-      {education.map((t) => (
+      {educationRows.map((t) => (
         <li class="xp-item">
           <span class="xp-logo" aria-hidden="true">
-            {t.logo ? <img src={t.logo} alt="" loading="lazy" decoding="async" /> : <span class="xp-mono">{t.short}</span>}
+            {t.logo ? <img src={t.logo} alt="" width={t.dim?.width} height={t.dim?.height} loading="lazy" decoding="async" /> : <span class="xp-mono">{t.short}</span>}
           </span>
           <div class="xp-body">
             <span class="xp-period mono">{t.period}</span>
-            <h4 class="xp-role">{t.role}</h4>
+            <h3 class="xp-role">{t.role}</h3>
             <p class="xp-org"><a href={t.url} target="_blank" rel="noopener">{t.org}</a><span class="xp-place"> · {t.place}</span></p>
           </div>
         </li>
@@ -165,13 +173,13 @@ const affiliations = [
 
     <div class="creds">
       <div class="cred-col">
-        <h3 class="block-head">Certifications</h3>
+        <h2 class="block-head">Certifications</h2>
         <ul class="cred-list">
           {certs.map((c) => <li>{c}</li>)}
         </ul>
       </div>
       <div class="cred-col">
-        <h3 class="block-head">Affiliations & Service</h3>
+        <h2 class="block-head">Affiliations & Service</h2>
         <ul class="cred-list">
           {affiliations.map((a) => <li>{a}</li>)}
         </ul>
@@ -212,7 +220,7 @@ const affiliations = [
   /* Skills */
   .skills { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.1rem; }
   .skill-group { padding: 1.1rem 1.25rem; }
-  .skill-group h4 {
+  .skill-group h3 {
     margin: 0 0 0.7rem;
     font-size: 0.78rem;
     font-family: var(--font-mono);
@@ -277,6 +285,8 @@ const affiliations = [
   }
   .xp-role { margin: 0; font-size: 1.02rem; }
   .xp-org { margin: 0.12rem 0 0; color: var(--text-1); font-size: 0.9rem; }
+  /* Keeps the type size but grows the hit area to the 24px WCAG 2.2 minimum. */
+  .xp-org a { display: inline-flex; align-items: center; min-height: 24px; }
   .xp-org a { color: var(--text-1); }
   .xp-org a:hover { color: var(--accent); }
   .xp-place { color: var(--text-2); }

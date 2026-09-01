@@ -10,7 +10,7 @@ highlightHref: "https://www.linkedin.com/pulse/abb-quebec-city-host-csdc-worksho
 
 WinSAT Space Systems Division stands alongside over 15 prestigious university teams from across Canada, all eager to conceptualize, craft, and launch a 3-Unit Cube Satellite (CubeSat). This two-year challenge promises not only a competitive spirit but also a plethora of interdisciplinary co-operative education experiences spanning multiple engineering arenas.
 
-### [**WinSAT won 1st place at the CSDC-5 Critical Design Review 2018-2020!**](https://www.linkedin.com/pulse/abb-quebec-city-host-csdc-workshop-design-reviews-lawrence-reeves/)
+## [**WinSAT won 1st place at the CSDC-5 Critical Design Review 2018-2020!**](https://www.linkedin.com/pulse/abb-quebec-city-host-csdc-workshop-design-reviews-lawrence-reeves/)
 
 ![](/media/winsat-3u-leo-cube-satellite/img00.jpg)
 
