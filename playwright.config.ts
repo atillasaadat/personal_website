@@ -5,6 +5,10 @@ import { defineConfig, devices } from '@playwright/test';
 // tablets, or desktop fails CI before it ships.
 export default defineConfig({
   testDir: './tests',
+  // tests/unit holds the Cloudflare Function tests: no browser, no server, and
+  // no point running them once per viewport. They have their own config
+  // (playwright.unit.config.ts), run by `npm run test:unit`.
+  testIgnore: '**/unit/**',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

@@ -26,7 +26,12 @@ const BOT_UA = /bot|crawl|spider|slurp|bingpreview|mediapartners|facebookexterna
 // real employer at a tech company can egress through them, and a few crawler
 // hits from those are preferable to dropping a genuine visit. Those still get
 // recorded, with their org shown on the dashboard so they can be judged.
-const HOSTING_ORG = /digitalocean|ovh|hetzner|linode|akamai|fastly|vultr|contabo|scaleway|leaseweb|\bm247\b|choopa|psychz|hostwinds|datacamp|colocrossing|quadranet|hostinger|namecheap|godaddy|bluehost|dreamhost|ionos|1&1|gigenet|sharktech|incero|servermania|hostkey|servers\.com|serverius|worldstream|poneytelecom|online s\.?a\.?s|netcup|time4vps|hostpapa|webhosting|hosting solutions|bright ?data|oxylabs|code200|smartproxy|packethub|oculus networks|hostroyale|gsl networks|hurricane electric|cogent|zayo|arelion|collyer quay|\bidc\b|cloud service|\bproxy\b|\bvpn\b|data ?cent(er|re)|dedicated server|virtual server|\bvps\b|colocation|cloud server/i;
+// The CDNs (Akamai, Fastly, Cloudflare) are NOT listed either, and must not be:
+// Safari's iCloud Private Relay egresses through exactly those three, so every
+// Mac/iPhone visitor with it enabled (on by default with iCloud+) presents as
+// one of them. Listing Akamai and Fastly here silently discarded that whole
+// slice of real traffic; they are CDNs, not VPS you can rent to run a scraper.
+const HOSTING_ORG = /digitalocean|ovh|hetzner|linode|vultr|contabo|scaleway|leaseweb|\bm247\b|choopa|psychz|hostwinds|datacamp|colocrossing|quadranet|hostinger|namecheap|godaddy|bluehost|dreamhost|ionos|1&1|gigenet|sharktech|incero|servermania|hostkey|servers\.com|serverius|worldstream|poneytelecom|online s\.?a\.?s|netcup|time4vps|hostpapa|webhosting|hosting solutions|bright ?data|oxylabs|code200|smartproxy|packethub|oculus networks|hostroyale|gsl networks|hurricane electric|cogent|zayo|arelion|collyer quay|\bidc\b|cloud service|\bproxy\b|\bvpn\b|data ?cent(er|re)|dedicated server|virtual server|\bvps\b|colocation|cloud server/i;
 
 // Decide whether a request to the beacon looks like a real human browser.
 // Conservative: when in doubt about a *modern* signal, treat as bot.

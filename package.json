@@ -9,6 +9,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "test": "playwright test",
+    "test:unit": "playwright test --config playwright.unit.config.ts",
+    "test:all": "npm run test:unit && npm test",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
     "test:links": "npm run build && linkinator ./dist --config linkinator.config.json --verbosity error"

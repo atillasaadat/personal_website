@@ -8,6 +8,31 @@ on:
   pull_request:
 
 jobs:
+  # Cloudflare Pages Function unit tests (country block, pageview beacon,
+  # insights dashboard). These never run under `astro preview`, so without this
+  # job the analytics pipeline could silently stop recording visitors: every DB
+  # write in track.js swallows its errors by design. Runs against a throwaway
+  # in-memory SQLite database built from schema.sql, never the production D1 one.
+  # Needs no browser and no build, so it fails fast, ahead of the layout suite.
+  functions:
+    name: Function unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # node:sqlite (used to run the Functions' real SQL against the real
+          # schema) is unflagged from Node 24.
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Function unit tests
+        run: npm run test:unit
+
   responsive:
     name: Responsive layout tests
     runs-on: ubuntu-latest

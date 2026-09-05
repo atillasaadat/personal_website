@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 // @ts-expect-error - plain JS Cloudflare Pages Function, no types
-import { onRequest } from '../functions/_middleware.js';
+import { onRequest } from '../../functions/_middleware.js';
 
 // The country block runs at the edge on Cloudflare, so it never executes under
 // `astro preview` and the browser tests cannot reach it. Exercise the function
