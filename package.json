@@ -13,7 +13,8 @@
     "test:all": "npm run test:unit && npm test",
     "test:ui": "playwright test --ui",
     "test:report": "playwright show-report",
-    "test:links": "npm run build && linkinator ./dist --config linkinator.config.json --verbosity error"
+    "test:links": "npm run build && linkinator ./dist --config linkinator.config.json --verbosity error",
+    "db:check": "node scripts/db-check.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
