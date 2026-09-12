@@ -14,6 +14,7 @@
     "^https?://(www\\.)?aiaa\\.org",
     "^https?://aeroastro\\.mit\\.edu",
     "^https?://(www\\.)?sflmissions\\.com",
-    "^https?://(www\\.)?cpom\\.org\\.uk"
+    "^https?://(www\\.)?cpom\\.org\\.uk",
+    "^https?://(www\\.)?canadensys\\.com"
   ]
 }

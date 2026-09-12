@@ -18,24 +18,18 @@ Proposed FDI simulation setup
 
 **Abstract** - The primary objective of this study is to explore novel applications of data-driven machine learning methods for isolation of nonlinear systems with a case study for an in-orbit closed-loop controlled satellite with reaction wheels as actuators. High-fidelity models of the three-axis controlled satellite are developed to provide an abundance of data for both healthy and various faulty conditions of the satellite. These data are then used as input for the proposed data-driven fault isolation method. Once a fault is detected, the fault isolation module is activated, where it employs a machine learning technique that incorporates ensemble methods involving random forests, decision trees, and nearest neighbors. Results of the classified faulty condition are then cross-validated using k-fold and leave-one-out methods. Performance comparison among different combinations for the ensemble architecture shows promising fault isolation of the non-linear systems using ensemble methods.
 
-## **ICASSE 2019 Presentation at University of Toronto**
+## **[ICASSE 2019 Presentation at University of Toronto](https://www.utias.utoronto.ca/icasse/)**
+
+Presented at the International Conference on Aerospace System Science and Engineering (ICASSE) 2019, hosted by the University of Toronto Institute for Aerospace Studies (UTIAS). [Paper on ResearchGate](https://www.researchgate.net/publication/336106932_Fault_Isolation_of_Reaction_Wheels_Onboard_3-axis_Controlled_In-orbit_Satellites_Using_Ensemble_Machine_Learning_Techniques)
+
+![Presenting the problem definition for data-driven fault detection and isolation at ICASSE 2019](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img07.jpg)
+
+![Presenting the three-axis stabilized satellite case study and proposed FDI simulation model](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img03.jpg)
+
+![Presenting the simulated attitude response under a reaction wheel fault](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img01.jpg)
+
+![At the University of Toronto Institute for Aerospace Studies for ICASSE 2019](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img05.jpg)
 
 ## **IAC 2020 Presentation**
 
 <video controls preload="metadata" playsinline><source src="/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/vid00.mp4" type="video/mp4" /></video>
-
-![](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img01.jpg)
-
-![](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img01.jpg)
-
-![](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img03.jpg)
-
-![](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img03.jpg)
-
-![](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img05.jpg)
-
-![](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img05.jpg)
-
-![](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img07.jpg)
-
-![](/media/adcs-fault-detection-and-isolation-with-ensemble-machine-learning-techniques/img07.jpg)

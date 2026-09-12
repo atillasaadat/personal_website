@@ -6,6 +6,10 @@ cover: "/media/covers/mujin-inc-internship-dynamics-identification-for-industria
 tags: ["Robotics", "Dynamics", "Internship"]
 ---
 
+> **This work led to two granted patents**, filed with co-inventor Kei Usui and assigned to Mujin Inc.:
+> 1. *Method and Computing System for Estimating Parameter for Robot Operation*: [US 12,076,866 B2](https://patents.google.com/patent/US12076866B2/en) (and [US 11,691,285 B2](https://patents.google.com/patent/US11691285B2/en)), [JP 7,098,124 B2](https://patents.google.com/patent/JP7098124B2/en)
+> 2. *Method and Computing System for Determining a Value of an Error Parameter Indicative of Quality of Robot Calibration*: [US 12,485,539 B2](https://patents.google.com/patent/US12485539B2/en) (and [US 11,717,966 B2](https://patents.google.com/patent/US11717966B2/en)), [JP 7,076,756 B2](https://patents.google.com/patent/JP7076756B2/en)
+
 At [Mujin Inc.](https://mujin-corp.com/) in Tokyo, Japan, I had the privilege to intern and contribute to groundbreaking robotic technology. I spearheaded the development of a robot dynamics identification feature for the Mujin Controller, touted as the "world's first AI-driven intelligent robot controller for motion planning". This enhanced feature refines the robot torque model, thereby optimizing motion planning.
 
 ![](/media/mujin-inc-internship-dynamics-identification-for-industrial-robotics/img00.jpg)

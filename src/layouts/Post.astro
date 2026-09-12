@@ -1,7 +1,7 @@
 ---
 import Base from './Base.astro';
 import type { CollectionEntry } from 'astro:content';
-import { addImgSizes, deferAutoplayVideos, gateCookieEmbeds } from '../lib/img-size.mjs';
+import { addImgSizes, deferAutoplayVideos } from '../lib/img-size.mjs';
 
 interface Props {
   post: CollectionEntry<'posts'>;
@@ -40,7 +40,7 @@ const articleLd = {
 };
 // Render the post body up front so every /media/ image gets width/height
 // (see src/lib/img-size.mjs); this is what stops images shifting the layout.
-const body = gateCookieEmbeds(deferAutoplayVideos(await addImgSizes(await Astro.slots.render('default'))));
+const body = deferAutoplayVideos(await addImgSizes(await Astro.slots.render('default')));
 
 const breadcrumbLd = {
   '@type': 'BreadcrumbList',
@@ -339,27 +339,6 @@ const breadcrumbLd = {
     });
   }
 
-  // LinkedIn / X embeds were replaced at build time with a placeholder (see
-  // gateCookieEmbeds in src/lib/img-size.mjs) so they set no cookies until the
-  // reader asks for them. Swap in the real iframe on click.
-  function bindConsentEmbeds() {
-    document.querySelectorAll<HTMLElement>('.post-body .embed-consent').forEach((box) => {
-      const btn = box.querySelector('.embed-consent-btn');
-      if (!btn || box.dataset.bound) return;
-      box.dataset.bound = '1';
-      btn.addEventListener('click', () => {
-        const frame = document.createElement('iframe');
-        frame.src = box.dataset.embedSrc || '';
-        frame.title = box.dataset.embedTitle || '';
-        frame.height = box.dataset.embedHeight || '620';
-        frame.setAttribute('frameborder', '0');
-        frame.setAttribute('allowfullscreen', '');
-        frame.setAttribute('loading', 'lazy');
-        box.replaceWith(frame);
-      });
-    });
-  }
-
   // A wide table scrolls sideways inside its own box, which a mouse can reach
   // but a keyboard cannot: without a tab stop the columns past the right edge
   // are unreachable (axe: scrollable-region-focusable). Give whichever element
@@ -408,7 +387,6 @@ const breadcrumbLd = {
     bindPostImages();
     lazyAutoplayVideos();
     syncScrollableTables();
-    bindConsentEmbeds();
   });
 
   // Overflow depends on the viewport, so re-check when it changes.

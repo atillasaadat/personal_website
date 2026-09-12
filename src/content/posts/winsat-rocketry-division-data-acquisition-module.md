@@ -25,11 +25,13 @@ Post-launch, this data served as a foundation for rigorous aerodynamic performan
 
 A testament to our dedication and this module's effectiveness: WinSAT's Rocketry Division secured the 5th position in the 30,000ft COTS category at IREC 2019!
 
-<figure class="centered">
-  <img src="/media/winsat-rocketry-division-data-acquisition-module/img01.jpg" alt="Rocket data acquisition payload module" />
-  <figcaption>Rocket Data Acquisition Payload</figcaption>
-</figure>
-
-**Video from launch at IREC 2019**
-
-<video class="media-tall" controls preload="metadata" playsinline><source src="/media/winsat-rocketry-division-data-acquisition-module/vid00.mp4" type="video/mp4" /></video>
+<div class="media-row" style="--media-cols: 4fr 3fr">
+  <figure>
+    <img src="/media/winsat-rocketry-division-data-acquisition-module/img01.jpg" alt="Rocket data acquisition payload module" />
+    <figcaption>Rocket Data Acquisition Payload</figcaption>
+  </figure>
+  <figure>
+    <video controls preload="metadata" playsinline width="720" height="1280"><source src="/media/winsat-rocketry-division-data-acquisition-module/vid00.mp4" type="video/mp4" /></video>
+    <figcaption>Video from launch at IREC 2019</figcaption>
+  </figure>
+</div>

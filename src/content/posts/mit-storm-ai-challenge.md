@@ -10,6 +10,8 @@ highlightHref: "https://aeroastro.mit.edu/arclab/aichallenge/"
 
 <video autoplay muted loop playsinline preload="auto" poster="/media/mit-storm-ai-challenge/img00.jpg"><source src="/media/mit-storm-ai-challenge/vid00.mp4" type="video/mp4" /></video>
 
+**[Read the paper](https://www.researchgate.net/publication/393786213_Real-Time_Thermospheric_Density_Forecasting_with_a_Metric-Aligned_BiGRU-Attention_Network)** (4 pages, full method and ablations) · **[Code on GitHub](https://github.com/atillasaadat/stormai-mit-competition)** (MIT licensed: data loaders, training scripts, pretrained weights)
+
 ## **Real‑Time Thermospheric Density Forecasting with a BiGRU‑Attention Network**
 
 *STORM‑AI Phase 2 Project Recap*
@@ -64,9 +66,9 @@ This end‑to‑end pipeline **hits real‑time throughput, outperforms the tran
 | --- | --- | --- | --- | --- | --- | --- |
 | 0.6784 | 0.5398 | 0.5675 | 0.1156 | 0.4998 | **0.7094** | **0.807** |
 
-![](/media/mit-storm-ai-challenge/img01.jpg)
-
 ![Certificate of Recognition received from MIT ARCLab](/media/mit-storm-ai-challenge/img02.jpg)
+
+![Final STORM-AI leaderboard, 4th of 18 validated participants](/media/mit-storm-ai-challenge/img01.jpg)
 
 The model outperformed the official transformer baseline while keeping the parameter count and run‑time budget tiny.
 
