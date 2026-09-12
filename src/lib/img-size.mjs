@@ -63,7 +63,6 @@ export function deferAutoplayVideos(html) {
 // third party is contacted otherwise. YouTube already uses youtube-nocookie
 // and Google Slides sets none, so neither is gated.
 const COOKIE_EMBEDS = [
-  [/^(www\.)?linkedin\.com$/i, 'LinkedIn'],
   [/^(platform|syndication)\.(twitter|x)\.com$/i, 'X'],
 ];
 

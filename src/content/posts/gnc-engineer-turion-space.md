@@ -4,7 +4,7 @@ description: "GNC Engineer for the Droid.001 and Droid.002 satellite missions: a
 date: 2024-09-21
 cover: "/media/covers/gnc-engineer-turion-space.mp4"
 tags: ["GNC", "Mission Ops", "Satellites"]
-highlight: "26,467 on-orbit images captured with the autonomous RSO imaging tool I authored"
+highlight: "26,467 on-orbit images captured with the autonomous RSO imaging tool I developed"
 highlightHref: "https://www.linkedin.com/posts/on-6122023-we-launched-droid001-today-ugcPost-7433224837478797313-gUjX/"
 ---
 

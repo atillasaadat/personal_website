@@ -1,15 +1,15 @@
 ---
 title: "An Adaptive Telemetry Probe for Resource-Constrained Spacecraft Using F Prime"
-description: "In-progress research on an adaptive, onboard telemetry probe for resource-constrained spacecraft, built on NASA JPL's F Prime and targeting the GPDM 6U CubeSat. Paper submitted to AIAA SciTech 2027."
+description: "Research on an adaptive, onboard telemetry probe for resource-constrained spacecraft, built on NASA JPL's F Prime and targeting the GPDM 6U CubeSat. Accepted to AIAA SciTech 2027, presenting in session SATS-06."
 date: 2026-06-15
 cover: "/media/adaptive-fprime-probe/gpdm.jpg"
 tags: ["Flight Software", "F Prime", "Telemetry"]
-highlight: "In progress · AIAA SciTech 2027 (submitted)"
+highlight: "Accepted · AIAA SciTech 2027 · Session SATS-06, Jan 13, 2027"
 ---
 
 ![GPDM 6U CubeSat flight hardware with deployed solar arrays. Image: NASA / Georgia Tech Space Systems Design Laboratory.](/media/adaptive-fprime-probe/gpdm.jpg)
 
-> **Status: in progress.** This work is being prepared for the **AIAA SciTech Forum 2027** (Orlando, FL) with co-authors V. Bhosale, K. Bhardwaj, and A. Gavrilovska. The paper has been submitted; this page is a short overview and will be expanded once the work is published.
+> **Status: accepted.** This paper has been accepted to the **AIAA SciTech Forum 2027** (Orlando, FL), with co-authors V. Bhosale, K. Bhardwaj, and A. Gavrilovska. I will present it in person in **session SATS-06, Small Satellite Software, Autonomy, and Operations**, on **January 13, 2027, 1:00 to 3:00 PM Eastern**. This page is a short overview and will be expanded once the work is published.
 
 ## **The problem: telemetry on a starvation budget**
 
@@ -31,4 +31,4 @@ The probe is being evaluated against the **Green Propellant Dual Mode (GPDM)** m
 
 Adaptive, resource-aware telemetry pushes a piece of the ground operator's judgment onboard. For resource-constrained spacecraft, that means better coverage of the moments that matter without paying for it during the moments that don't, and a path toward more autonomous fault detection and event capture on missions that cannot afford a fat, always-on telemetry pipe.
 
-More detail, results, and references will follow with the AIAA SciTech 2027 publication.
+More detail, results, and references will follow with the AIAA SciTech 2027 publication and the SATS-06 presentation.
