@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { PAGES, blockExternals, prep } from './_helpers';
+import { PAGES, blockExternals, prep, attachShot } from './_helpers';
 
 test.beforeEach(async ({ page }) => {
   await blockExternals(page);
@@ -17,11 +17,8 @@ for (const { path, name } of PAGES) {
         clientW: document.documentElement.clientWidth,
       }));
 
-      // Attach a full-page screenshot to the report for quick visual review.
-      await testInfo.attach(`${name}-${testInfo.project.name}`, {
-        body: await page.screenshot({ fullPage: true }),
-        contentType: 'image/png',
-      });
+      // Attach a screenshot to the report for quick visual review.
+      await attachShot(page, testInfo, `${name}-${testInfo.project.name}`);
 
       expect(scrollW, `${path} scrolls horizontally on ${testInfo.project.name}`).toBeLessThanOrEqual(
         clientW + 1,

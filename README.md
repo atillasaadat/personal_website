@@ -92,20 +92,22 @@ npm run build      # fails if any post frontmatter is invalid
 
 **2. Responsive / cross-device tests (Playwright)**
 
-These build the site, serve the real production output, and load the key pages at four viewport sizes (small phone 360px, phone 390px, tablet 820px, desktop 1440px), checking that:
+These build the site, serve the real production output, and load the key pages across six device profiles: four Chromium viewports (small phone 360px, phone 390px, tablet 820px, desktop 1440px) plus an iPhone and an iPad on **WebKit**. WebKit matters because every browser on iOS, Chrome and Firefox included, is WebKit underneath, so Chromium at a narrow viewport cannot see an iOS-only bug. They check that:
 - the page never scrolls sideways (no horizontal overflow),
-- no image, video, table, or embed spills past the viewport,
+- no image, video, table, or embed spills past the viewport, and nothing is clipped off the left edge,
 - the header works per device (hamburger menu on mobile, inline links on desktop) and the Projects link scrolls to its section,
-- the hero and key sections render.
+- the hero and key sections render,
+- on phones and tablets: no embed, image or video collapses to zero size, the `<h1>` is not buried under the sticky header, the page scrolls through to the contact footer, every subresource loads (no 404s), and the collapsed nav opens and navigates,
+- the CV page's PDF.js embed actually paints a page inside its iframe, and falls back to plain download links if it ever cannot (`tests/cv-embed.spec.ts`).
 
 ```bash
-npx playwright install --with-deps chromium   # one-time: download the browser
+npx playwright install --with-deps chromium webkit   # one-time: download the browsers
 npm test                                        # run all viewport tests
 npm run test:ui                                 # interactive runner (great for debugging)
 npm run test:report                             # open the last HTML report
 ```
 
-The HTML report includes a **full-page screenshot of every page on every device**, so you can eyeball each layout after a change. Test files live in `tests/`; viewports are defined in `playwright.config.ts`.
+The HTML report includes a **screenshot of every page on every device**, so you can eyeball each layout after a change. Test files live in `tests/`; the device profiles are defined in `playwright.config.ts`.
 
 These run automatically in CI on every push and pull request (see section 8), so a change that breaks a mobile, tablet, or desktop layout fails before it deploys.
 
@@ -187,7 +189,7 @@ npx wrangler pages dev dist                                # static site + Funct
 
 ## 8. Continuous integration (CI)
 
-`.github/workflows/ci.yml` runs the responsive test suite (section 5) on **every push to `main` and every pull request**. It installs dependencies, builds the site, and runs the Playwright tests across all four device viewports. If any layout breaks, the check fails (red X on the commit/PR), and the run uploads a **`playwright-report` artifact** containing the per-device screenshots and any failure traces, so you can see exactly what broke and on which device.
+`.github/workflows/ci.yml` runs the responsive test suite (section 5) on **every push to `main` and every pull request**. It installs dependencies, builds the site, and runs the Playwright tests across all six device profiles (four Chromium viewports plus iPhone and iPad on WebKit). If any layout breaks, the check fails (red X on the commit/PR), and the run uploads a **`playwright-report` artifact** containing the per-device screenshots and any failure traces, so you can see exactly what broke and on which device.
 
 This is independent of deployment: Cloudflare Pages still deploys from `main` on its own. CI is just a safety net that flags broken layouts before (or right as) they ship. If you want deploys to wait for tests to pass, you can later add the CI check as a required status check in your GitHub branch protection settings.
 
@@ -208,7 +210,7 @@ public/
   files/            CV PDF and other downloadable documents
   satmap.html       Self-contained CesiumJS satellite globe (loaded in an iframe)
 tests/              Playwright responsive/cross-device tests
-playwright.config.ts  Test viewports (mobile/tablet/desktop) + dev server config
+playwright.config.ts  Test device profiles (Chromium viewports + WebKit phone/tablet) + dev server config
 .github/workflows/  CI: runs the responsive tests on every push and pull request
 functions/          Cloudflare Pages Functions: track.js (beacon), insights.js (dashboard), oembed.js
 wrangler.toml       Cloudflare config (D1 binding)

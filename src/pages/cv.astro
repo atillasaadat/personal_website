@@ -4,6 +4,10 @@ const cvPath = '/files/Atilla_Saadat_CV.pdf';
 // Self-hosted Mozilla PDF.js viewer (see public/pdfjs/), the same engine
 // behind Firefox's built-in PDF viewer: thumbnails, outline, find, zoom,
 // print, and download, all rendered from the file already on this origin.
+// The vendored copy is PDF.js's *legacy* build, not the default one: the
+// default build is shipped untranspiled and unpolyfilled "for the latest
+// browsers" and died on load in iOS WebKit, leaving a blank box on phones
+// while desktop was fine. See README / CLAUDE.md before re-vendoring.
 // #pagemode=none is required: PDF.js opens its outline panel on every load,
 // and on a phone that panel is an overlay, not a column, so it covers half
 // the CV. The reader can still open it from the toolbar.
@@ -19,8 +23,19 @@ const viewerSrc = `/pdfjs/web/viewer.html?file=${encodeURIComponent(cvPath)}#pag
         <a class="btn" href={cvPath} target="_blank" rel="noopener">Open in new tab ↗</a>
       </p>
     </div>
-    <div class="viewer hud-card">
+    <!-- data-cv-viewer / data-state are the contract the script and
+         tests/cv-embed.spec.ts share: "ok" once a page has actually been
+         painted inside the iframe, "failed" if it never was. -->
+    <div class="viewer hud-card" data-cv-viewer data-state="pending">
       <iframe src={viewerSrc} title="Atilla Saadat CV"></iframe>
+      <div class="viewer-fallback">
+        <p class="fallback-title">The inline PDF viewer could not start in this browser.</p>
+        <p class="fallback-body">The CV itself is fine, open or download it directly:</p>
+        <p class="actions">
+          <a class="btn" href={cvPath} target="_blank" rel="noopener">Open the CV ↗</a>
+          <a class="btn" href={cvPath} download>Download PDF ↓</a>
+        </p>
+      </div>
     </div>
   </section>
 </Base>
@@ -40,6 +55,7 @@ const viewerSrc = `/pdfjs/web/viewer.html?file=${encodeURIComponent(cvPath)}#pag
   }
   .btn:hover { text-decoration: none; border-color: var(--accent); color: var(--accent); }
   .viewer {
+    position: relative;
     overflow: hidden;
     height: min(1200px, 140vh);
   }
@@ -49,7 +65,78 @@ const viewerSrc = `/pdfjs/web/viewer.html?file=${encodeURIComponent(cvPath)}#pag
     border: 0;
     display: block;
   }
+  /* Shown only when the script gives up waiting for the viewer to paint a
+     page, so a browser PDF.js cannot run in gets a working CV instead of an
+     empty box. Kept out of the flow (not [hidden]) so swapping it in costs no
+     layout shift. */
+  .viewer-fallback {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 1.5rem;
+    text-align: center;
+  }
+  .viewer[data-state='failed'] iframe { display: none; }
+  .viewer[data-state='failed'] .viewer-fallback { display: flex; }
+  .fallback-title { color: var(--text-0); font-weight: 600; }
+  .fallback-body { color: var(--text-2); font-size: 0.95rem; }
+  .viewer-fallback .actions { justify-content: center; }
   @media (max-width: 720px) {
-    .viewer { height: 80vh; }
+    /* dvh tracks the shrinking/growing mobile URL bar; vh is the fallback for
+       browsers without it and resolves to the *large* viewport, which on a
+       phone runs the embed off the bottom of the screen. */
+    .viewer { height: 80vh; height: 80dvh; }
   }
 </style>
+
+<script>
+  import { onPageReady } from '../lib/page-ready';
+
+  // The PDF.js viewer is a third-party app in an iframe; when it fails (an
+  // engine it does not support, a blocked subresource) it fails silently and
+  // leaves an empty box, which is exactly what iOS used to show. The iframe is
+  // same-origin, so poll it for a real painted page and fall back to plain
+  // links if none ever arrives.
+  const GIVE_UP_MS = 12_000;
+  const POLL_MS = 250;
+
+  function hasRenderedPage(frame: HTMLIFrameElement) {
+    let doc: Document | null = null;
+    try {
+      doc = frame.contentDocument;
+    } catch {
+      return false; // cross-origin: cannot tell, treated as not-yet
+    }
+    const canvas = doc?.querySelector<HTMLCanvasElement>('#viewer .page canvas');
+    return !!canvas && canvas.width > 0 && canvas.height > 0;
+  }
+
+  function watchCvViewer() {
+    const wrap = document.querySelector<HTMLElement>('[data-cv-viewer]');
+    const frame = wrap?.querySelector('iframe');
+    if (!wrap || !frame) return;
+
+    wrap.dataset.state = 'pending';
+    const deadline = Date.now() + GIVE_UP_MS;
+    const tick = () => {
+      // A client-side navigation away replaces the node; stop polling then.
+      if (!wrap.isConnected) return;
+      if (hasRenderedPage(frame)) {
+        wrap.dataset.state = 'ok';
+        return;
+      }
+      if (Date.now() > deadline) {
+        wrap.dataset.state = 'failed';
+        return;
+      }
+      setTimeout(tick, POLL_MS);
+    };
+    tick();
+  }
+
+  onPageReady(watchCvViewer);
+</script>

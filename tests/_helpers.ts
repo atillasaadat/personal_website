@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Page, TestInfo } from '@playwright/test';
 
 // Pages that should render correctly on every device. Covers the homepage plus
 // posts with the trickiest layouts: a gallery, data tables, and slide embeds.
@@ -44,4 +44,22 @@ export async function prep(page: Page) {
     `,
   });
   await page.evaluate(() => (document as any).fonts?.ready).catch(() => {});
+}
+
+// Attach a page screenshot to the HTML report.
+//
+// Prefers a full-page shot, but falls back to the viewport when the scaled
+// image would exceed the 32767px per-dimension limit browsers enforce: the
+// WebKit phone projects render at devicePixelRatio 3, which puts a long page
+// (the homepage) over the cap and turns a passing test into a screenshot error.
+export async function attachShot(page: Page, testInfo: TestInfo, name: string) {
+  const { height, dpr } = await page.evaluate(() => ({
+    height: document.documentElement.scrollHeight,
+    dpr: window.devicePixelRatio,
+  }));
+  const fullPage = height * dpr < 32000;
+  await testInfo.attach(name, {
+    body: await page.screenshot({ fullPage }),
+    contentType: 'image/png',
+  });
 }
