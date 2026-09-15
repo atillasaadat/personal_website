@@ -15,18 +15,15 @@ CryoRoute is a software package developed by the University of Windsor Space & A
 
 Using current methods stated by the Canadian Coast Guard, vessels traveling through polar regions obtain SIT data locally through visual inspections, ice analysis charts, onboard radar systems, or other means to deviate their path towards lighter ice areas. To address long-term deviation problems, CryoRoute generates a globally-optimized naval route based on SIT maps extracted from CryoSat-2 data provided by the [Center for Polar Observation and Modelling (CPOM)](https://cpom.org.uk/). With the inclusion of Automatic Identification System (AIS) naval positions and the Polar Operational Limit Assessment Risk Indexing System (POLARIS), a route is calculated with a specialized A\* pathfinding algorithm. The resulting paths are computed based on minimizing expedition duration, distance, overall fuel consumption, and assessed risk from varied ice thickness to the vessel. Therefore, CryoRoute is anticipated to provide a better alternative for naval navigation in addition to conventional methods for expeditions in the northern Arctic regions, creating new passages between the Pacific and Atlantic Oceans.
 
-## **European Space Agency Atlantic from Space Workshop Presentation**
+## **Conference Presentations**
 
-![](/media/cryoroute-globally-optimized-naval-routes-in-north-arctic-ocean/img01.jpg)
+CryoRoute was presented at the European Space Agency Atlantic from Space Workshop (National Oceanographic Centre, Southampton, UK) and at the UWillDiscover 2019 Conference (University of Windsor).
 
-![](/media/cryoroute-globally-optimized-naval-routes-in-north-arctic-ocean/img02.jpg)
+![European Space Agency Atlantic from Space Workshop, National Oceanographic Centre, Southampton, UK](/media/cryoroute-globally-optimized-naval-routes-in-north-arctic-ocean/img01.jpg)
 
-European Space Agency Atlantic from Space Workshop National Oceanographic Centre, Southampton, UK
+![European Space Agency Atlantic from Space Workshop, National Oceanographic Centre, Southampton, UK](/media/cryoroute-globally-optimized-naval-routes-in-north-arctic-ocean/img02.jpg)
 
-<figure class="figure-single media-tall">
-  <img src="/media/cryoroute-globally-optimized-naval-routes-in-north-arctic-ocean/img03.jpg" alt="UWillDiscover 2019 Conference, University of Windsor" />
-  <figcaption>UWillDiscover 2019 Conference, University of Windsor</figcaption>
-</figure>
+![UWillDiscover 2019 Conference, University of Windsor](/media/cryoroute-globally-optimized-naval-routes-in-north-arctic-ocean/img03.jpg)
 
 **UWillDiscover 2019 Conference Presentation**
 
