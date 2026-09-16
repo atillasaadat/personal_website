@@ -117,7 +117,11 @@ const breadcrumbLd = {
         ${imgs
           .map(
             (im, k) =>
-              `<button class="gallery-thumb${k === 0 ? ' active' : ''}" data-i="${k}" aria-label="View image ${k + 1}"><img src="${im.src}" alt="" loading="lazy" /></button>`,
+              // width/height mirror the stage image: the thumb's box is pinned
+              // by CSS, so these only give the browser an aspect ratio to
+              // reserve, and keep the "every <img> carries dimensions"
+              // invariant true for markup built at runtime.
+              `<button class="gallery-thumb${k === 0 ? ' active' : ''}" data-i="${k}" aria-label="View image ${k + 1}"><img src="${im.src}" alt=""${im.w && im.h ? ` width="${im.w}" height="${im.h}"` : ''} loading="lazy" decoding="async" /></button>`,
           )
           .join('')}
       </div>

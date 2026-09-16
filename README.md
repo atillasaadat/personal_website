@@ -98,7 +98,8 @@ These build the site, serve the real production output, and load the key pages a
 - the header works per device (hamburger menu on mobile, inline links on desktop) and the Projects link scrolls to its section,
 - the hero and key sections render,
 - on phones and tablets: no embed, image or video collapses to zero size, the `<h1>` is not buried under the sticky header, the page scrolls through to the contact footer, every subresource loads (no 404s), and the collapsed nav opens and navigates,
-- the CV page's PDF.js embed actually paints a page inside its iframe, and falls back to plain download links if it ever cannot (`tests/cv-embed.spec.ts`).
+- the CV page's PDF.js embed actually paints a page inside its iframe, and falls back to plain download links if it ever cannot (`tests/cv-embed.spec.ts`),
+- on phones and tablets, that the result is actually usable: no text under 11px, tap targets at least 24x24, every video carrying `playsinline` (iOS takes videos without it fullscreen), every image dimensioned, wide tables scrolling inside themselves instead of dragging the page sideways, the homepage anchors clearing the sticky header, the image viewer fitting on screen, and pinch zoom still allowed (`tests/mobile-content.spec.ts`).
 
 ```bash
 npx playwright install --with-deps chromium webkit   # one-time: download the browsers

@@ -37,7 +37,10 @@ const satCount = 20;
 <style>
   .map-shell {
     position: relative;
+    /* dvh so the globe is sized to what the phone actually shows, not the
+       URL-bar-hidden large viewport; vh stays as the fallback. */
     height: clamp(440px, 80vh, 920px);
+    height: clamp(440px, 80dvh, 920px);
     overflow: hidden;
     background:
       radial-gradient(circle at 50% 45%, rgba(34, 60, 110, 0.35), transparent 60%),

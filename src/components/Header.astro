@@ -83,6 +83,16 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     padding: 0;
   }
   ul a {
+    /* inline-flex + min-height rather than a bigger font: the links render at
+       18px of line box and the "CV" link only 18px wide, under the 24px minimum
+       tap target the rest of the site holds to. The nav row is centred, so the
+       larger box does not move them. */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    /* 24px in both directions: the shortest label, "CV", was only 18px wide. */
+    min-width: 24px;
     font-family: var(--font-mono);
     font-size: 0.84rem;
     letter-spacing: 0.08em;

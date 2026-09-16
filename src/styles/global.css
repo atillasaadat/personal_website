@@ -243,8 +243,14 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
 .lightbox {
   position: fixed;
   inset: 0;
+  /* dvh/dvw track the mobile URL bar as it shows and hides; vh/vw stay as the
+     fallback and resolve to the *large* viewport, which on a phone puts the
+     bottom of the dialog (the caption, and the prev/next row) below the edge of
+     the screen while the bar is visible. */
   width: 100vw;
+  width: 100dvw;
   height: 100vh;
+  height: 100dvh;
   max-width: none;
   max-height: none;
   margin: 0;
@@ -409,6 +415,7 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   .prose figure.figure-float img {
     width: auto;
     max-height: 70vh;
+    max-height: 70dvh;
     margin-inline: auto;
   }
 }
@@ -418,6 +425,7 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
 .prose video.media-tall,
 .prose figure.media-tall img {
   max-height: 70vh;
+  max-height: 70dvh;
   width: auto;
   max-width: 100%;
   margin-left: auto;
@@ -667,6 +675,7 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   width: 100%;
   height: auto;
   max-height: 62vh;
+  max-height: 62dvh;
   object-fit: contain;
   margin: 0;
 }

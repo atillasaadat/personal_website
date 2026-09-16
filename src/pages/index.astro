@@ -261,7 +261,9 @@ const awards = await Promise.all(
   }
   .hero-socials-label {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    /* 0.7rem, matching the other mono labels (.p-label, .badge). At 0.68rem
+       this was the one piece of text on the site under 11px. */
+    font-size: 0.7rem;
     letter-spacing: 0.1em;
     color: var(--text-2);
     white-space: nowrap;
