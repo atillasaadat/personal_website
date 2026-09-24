@@ -580,6 +580,9 @@ function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, total
   .lvl.active { background:rgba(94,234,212,0.14); border-color:#5eead4; color:#5eead4; }
   #map { width:100%; height:520px; background:#0a101e;
          border:1px solid rgba(126,168,255,0.16); border-radius:10px; }
+  /* Esri's dark canvas is a touch lighter than the dashboard; dim the tiles so
+     the teal/amber/rose data dots stay the brightest thing on the map. */
+  #map .leaflet-tile { filter:brightness(0.62); }
   .legend { display:flex; flex-wrap:wrap; align-items:center; gap:0.6rem; margin-top:0.6rem; font-size:0.74rem; color:#aab8d4; }
   .legend .bar { width:160px; height:10px; border-radius:5px;
                  background:linear-gradient(90deg,#2dd4bf,#facc15,#f43f5e); }
@@ -850,17 +853,23 @@ function page({ range, fromStr, toStr, label, tz, engagedOnly, modeCounts, total
       // preferCanvas keeps thousands of boundary polygons fast.
       map = L.map('map', { worldCopyJump: true, minZoom: 1, maxZoom: 12, preferCanvas: true, attributionControl: true })
         .setView([25, 0], 2);
-      var carto = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}{r}.png', {
-        subdomains: 'abcd', maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      // Esri's dark gray canvas: keyless, dark enough for the data to read on
+      // top, and labelled. NOT CARTO's dark_all: CARTO retired anonymous
+      // basemap access and now serves an "API KEY REQUIRED" watermark stamped
+      // over every tile, as HTTP 200, so tileerror below never fires and the
+      // map just silently shows the watermark. Esri's URL is {z}/{y}/{x}
+      // (row before column) and takes no {s} subdomain or {r} retina suffix.
+      var base = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 16,
+        attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
-      // If CARTO ever fails to serve tiles, fall back to OSM so the basemap is
-      // never left blank behind the data.
+      // If the basemap ever fails to serve tiles, fall back to OSM so the
+      // basemap is never left blank behind the data.
       var fellBack = false;
-      carto.on('tileerror', function () {
+      base.on('tileerror', function () {
         if (fellBack) return;
         fellBack = true;
-        map.removeLayer(carto);
+        map.removeLayer(base);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           subdomains: 'abc', maxZoom: 19,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
