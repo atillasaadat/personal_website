@@ -501,6 +501,14 @@ img, video { max-width: 100%; height: auto; border-radius: var(--radius); }
   display: block;
   margin: 0;
 }
+/* LinkedIn iframes are cross-origin, so they cannot size to their content.
+   An embed whose post grows on narrow screens (text rewraps) can set
+   style="--li-h-narrow: <px>" to get a taller box there, so it never scrolls. */
+@media (max-width: 420px) {
+  .prose .li-embed iframe[style*="--li-h-narrow"] {
+    height: var(--li-h-narrow);
+  }
+}
 .prose .li-embed figcaption {
   margin-top: 0.5rem;
   text-align: center;

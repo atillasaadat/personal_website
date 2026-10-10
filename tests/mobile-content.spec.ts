@@ -157,7 +157,7 @@ test.describe('homepage anchors', () => {
 });
 
 test('the image viewer fits the screen and can be dismissed', async ({ page }) => {
-  await page.goto('/post/gnc-engineer-varda-space', { waitUntil: 'domcontentloaded' });
+  await page.goto('/post/gnc-engineer-turion-space', { waitUntil: 'domcontentloaded' });
   await prep(page);
   await page.waitForTimeout(800);
 

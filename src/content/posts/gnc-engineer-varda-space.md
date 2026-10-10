@@ -1,5 +1,5 @@
 ---
-title: "GNC Engineer @ Varda Space Industries"
+title: "Spacecraft GNC Engineer @ Varda Space Industries"
 description: "Spacecraft GNC Engineer II at Varda, covering Monte Carlo simulation, trajectory design, and on-orbit operations for the W-Series reentry vehicles that bring in-space manufacturing back to Earth."
 date: 2026-04-15
 cover: "/media/covers/varda.mp4"
@@ -57,12 +57,17 @@ Varda has flown a growing cadence of W-Series capsules. The footage below, from 
 
 *Onboard capsule view of the full W-5 reentry, from orbit to ground in a matter of minutes.*
 
-## **Next: Bus Block 2**
+## **W-8 & W-9**
 
-Beyond flying today's vehicles, I serve as the **GNC Responsible Engineer for Bus Block 2**, architecting the next generation of Varda reentry vehicles designed for **multi-vehicle operations and a higher mission cadence**. The goal is to make returning material from space routine: more capsules, flying more often, each one landing exactly where it should.
+I am the **GNC Responsible Engineer for W-8 and W-9**, owning the GNC system for both vehicles from analysis through flight. Both capsules launched successfully together on SpaceX's **Transporter-18** rideshare, and every flight like this moves Varda closer to the higher mission cadence that makes returning material from space routine: more capsules, flying more often, each one landing exactly where it should.
 
-![Atilla Saadat with a Varda W-Series capsule bus in the cleanroom](/media/varda/VardaSpace_AtillaSaadat.jpg)
+Along the way, I was named to the Society of Manufacturing Engineers' (SME) 2026 **30 Under 30** class, which Varda shared in the post below.
 
-*With a Varda W-Series capsule bus in the cleanroom.*
+<div class="li-embeds">
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:share:7513737284190380032" title="Varda Space Industries post on SME 30 Under 30 on LinkedIn" height="800" style="--li-h-narrow: 880px" frameborder="0" allowfullscreen loading="lazy"></iframe>
+    <figcaption>🏆 Varda's post on my SME 30 Under 30 recognition, with a W-Series capsule bus in the cleanroom</figcaption>
+  </figure>
+</div>
 
 In-space manufacturing only matters if you can reliably get the product back. That return, the trajectory, the dispersions, the operations, and the landing, is the problem I get to work on every day.

@@ -1,6 +1,6 @@
 ---
-title: "GNC Engineer @ Turion Space"
-description: "GNC Engineer for the Droid.001 and Droid.002 satellite missions: autonomous mission ops and attitude control optimization for in-situ Non-Earth Imaging (NEI)."
+title: "Spacecraft GNC Engineer @ Turion Space"
+description: "Spacecraft GNC Engineer for the Droid.001 and Droid.002 satellite missions: autonomous mission ops and attitude control optimization for in-situ Non-Earth Imaging (NEI)."
 date: 2024-09-21
 cover: "/media/covers/gnc-engineer-turion-space.mp4"
 tags: ["GNC", "Mission Ops", "Satellites"]
