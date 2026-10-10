@@ -43,3 +43,31 @@ test('serves everyone else, and fails open when geo is unknown', async () => {
   const noGeo = await onRequest(ctx(null));
   expect(noGeo.status, 'no geo data at all must not be blocked').toBe(200);
 });
+
+// The geo cookie feeds the day/night theme in Base.astro's head script.
+const geoCtx = ({ cf = {}, cookie = '', type = 'text/html; charset=utf-8' } = {}) => ({
+  request: { cf: { country: 'US', ...cf }, headers: new Headers(cookie ? { Cookie: cookie } : {}) },
+  next: async () => new Response('<!doctype html>', { status: 200, headers: { 'content-type': type } }),
+});
+const LA = { latitude: '34.05223', longitude: '-118.24368' };
+
+test('hands HTML pages the visitor location, rounded to ~10 km', async () => {
+  const res = await onRequest(geoCtx({ cf: LA }));
+  const c = res.headers.get('set-cookie') || '';
+  expect(c).toContain('geo=34.1,-118.2;');
+  expect(c).toContain('Path=/');
+  expect(c).toContain('SameSite=Lax');
+  expect(c).toContain('Secure');
+  expect(await res.text()).toBe('<!doctype html>');
+});
+
+test('leaves assets, repeat views and unknown locations without a geo cookie', async () => {
+  const asset = await onRequest(geoCtx({ cf: LA, type: 'image/jpeg' }));
+  expect(asset.headers.get('set-cookie'), 'asset').toBeNull();
+  const repeat = await onRequest(geoCtx({ cf: LA, cookie: 'vid=abc; geo=34.1,-118.2' }));
+  expect(repeat.headers.get('set-cookie'), 'unchanged cookie').toBeNull();
+  const moved = await onRequest(geoCtx({ cf: LA, cookie: 'geo=40.7,-74.0' }));
+  expect(moved.headers.get('set-cookie'), 'moved city').toContain('geo=34.1,-118.2;');
+  const unknown = await onRequest(geoCtx());
+  expect(unknown.headers.get('set-cookie'), 'no coordinates').toBeNull();
+});

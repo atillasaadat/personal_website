@@ -184,26 +184,34 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 
     const themeBtn = document.getElementById('theme-toggle');
     if (themeBtn) {
-      const sync = () => {
-        const light = document.documentElement.dataset.theme === 'light';
-        themeBtn.setAttribute('aria-pressed', String(light));
-        themeBtn.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
-        const meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', light ? '#eef2f9' : '#05080f');
-      };
-      sync();
+      syncTheme();
       if (!themeBtn.dataset.bound) {
         themeBtn.dataset.bound = '1';
         themeBtn.addEventListener('click', () => {
           const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-          document.documentElement.dataset.theme = next;
-          try { localStorage.setItem('theme', next); } catch (e) {}
-          document.dispatchEvent(new CustomEvent('themechange', { detail: next }));
-          sync();
+          // Base.astro's head script owns the theme: it stores the pick (held
+          // until the next sunrise/sunset), applies it, and fires themechange.
+          (window as unknown as { __theme: { pick: (t: string) => void } }).__theme.pick(next);
         });
       }
     }
   }
+
+  // Reflect the current theme on the toggle (looked up fresh: the header is
+  // re-rendered on every client-side navigation) and the browser chrome colour.
+  function syncTheme() {
+    const light = document.documentElement.dataset.theme === 'light';
+    const btn = document.getElementById('theme-toggle');
+    if (btn) {
+      btn.setAttribute('aria-pressed', String(light));
+      btn.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme');
+    }
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', light ? '#eef2f9' : '#05080f');
+  }
+  // Module scripts run once, so this registers once. themechange comes from a
+  // toggle click or from the sun flipping the automatic theme while open.
+  document.addEventListener('themechange', syncTheme);
   import { onPageReady } from '../lib/page-ready';
   onPageReady(setupHeader);
 </script>

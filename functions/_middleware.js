@@ -40,5 +40,31 @@ export async function onRequest(context) {
     });
   }
 
-  return next();
+  return withGeoCookie(request, await next());
+}
+
+// Day/night theme: the inline script in Base.astro picks light from sunrise to
+// sunset at the visitor's location. The browser has no location without a
+// permission prompt, so hand it the coordinates Cloudflare already resolved
+// for this request, rounded to 0.1 deg (~10 km), city level at best. Only on
+// HTML documents (HTML is never edge-cached here, see public/_headers), and
+// only when the value changed, so assets and repeat views carry no Set-Cookie.
+const GEO_MAX_AGE = 60 * 60 * 24 * 7;
+
+export function withGeoCookie(request, response) {
+  const lat = Number.parseFloat(request.cf?.latitude);
+  const lon = Number.parseFloat(request.cf?.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return response;
+  if (!(response.headers.get('content-type') || '').includes('text/html')) return response;
+
+  const value = `${lat.toFixed(1)},${lon.toFixed(1)}`;
+  const current = /(?:^|;\s*)geo=([^;]*)/.exec(request.headers.get('Cookie') || '')?.[1];
+  if (current === value) return response;
+
+  const res = new Response(response.body, response);
+  res.headers.append(
+    'Set-Cookie',
+    `geo=${value}; Path=/; Max-Age=${GEO_MAX_AGE}; SameSite=Lax; Secure`,
+  );
+  return res;
 }

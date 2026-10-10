@@ -111,19 +111,105 @@ const structuredData = {
       <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />
     ))}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <!-- Apply the saved theme (default dark) before first paint, and re-apply
-         after each view-transition swap so it survives client-side navigation. -->
+    <!-- Theme before first paint: light from sunrise to sunset at the visitor's
+         location, dark otherwise. Location is the `geo` cookie the middleware
+         sets from Cloudflare's coordinates; without it, 07:00 to 19:00 local.
+         A toggle click (Header.astro, via window.__theme.pick) holds until the
+         next sunrise/sunset, then auto resumes. Re-applied after each
+         view-transition swap, on tab focus, and at the moment the sun changes. -->
     <script is:inline>
       (function () {
-        var apply = function () {
-          try {
-            document.documentElement.dataset.theme = localStorage.getItem('theme') || 'dark';
-          } catch (e) {
-            document.documentElement.dataset.theme = 'dark';
+        var root = document.documentElement;
+        var RAD = Math.PI / 180;
+        var DAY = 86400000;
+
+        // [rise, set] in ms for the solar day n (days since J2000), or
+        // 'day'/'night' when the sun never sets/rises (polar). Sunrise equation
+        // (NOAA simplified), good to about a minute.
+        function sun(n, lat, lon) {
+          var j = n - lon / 360;
+          var m = (357.5291 + 0.98560028 * j) % 360;
+          var c = 1.9148 * Math.sin(m * RAD) + 0.02 * Math.sin(2 * m * RAD) + 0.0003 * Math.sin(3 * m * RAD);
+          var l = (m + c + 282.9372) % 360;
+          var transit = 2451545 + j + 0.0053 * Math.sin(m * RAD) - 0.0069 * Math.sin(2 * l * RAD);
+          var dec = Math.asin(Math.sin(l * RAD) * Math.sin(23.4397 * RAD));
+          var cosW = (Math.sin(-0.833 * RAD) - Math.sin(lat * RAD) * Math.sin(dec)) / (Math.cos(lat * RAD) * Math.cos(dec));
+          if (cosW < -1) return 'day';
+          if (cosW > 1) return 'night';
+          var w = Math.acos(cosW) / RAD / 360;
+          return [(transit - w - 2440587.5) * DAY, (transit + w - 2440587.5) * DAY];
+        }
+
+        function geo() {
+          var m = /(?:^|;\s*)geo=(-?[\d.]+),(-?[\d.]+)/.exec(document.cookie);
+          return m ? [+m[1], +m[2]] : null;
+        }
+
+        // { theme, next }: the automatic theme now, and when it next flips.
+        function auto(now) {
+          var g = geo();
+          if (!g) {
+            var d = new Date(now), h = d.getHours();
+            var day = h >= 7 && h < 19;
+            d.setHours(day ? 19 : 7, 0, 0, 0);
+            if (!day && h >= 19) d.setDate(d.getDate() + 1);
+            return { theme: day ? 'light' : 'dark', next: d.getTime() };
           }
+          var n = Math.round(now / DAY + 2440587.5 - 2451545);
+          var theme = 'dark', next = Infinity;
+          for (var i = n - 1; i <= n + 2; i++) {
+            var s = sun(i, g[0], g[1]);
+            if (typeof s === 'string') {
+              if (i === n) theme = s === 'day' ? 'light' : 'dark';
+              continue;
+            }
+            if (now >= s[0] && now < s[1]) theme = 'light';
+            if (s[0] > now && s[0] < next) next = s[0];
+            if (s[1] > now && s[1] < next) next = s[1];
+          }
+          // Polar day/night: nothing flips soon, look again in a few hours.
+          return { theme: theme, next: next === Infinity ? now + DAY / 4 : next };
+        }
+
+        function read() {
+          try {
+            localStorage.removeItem('theme'); // pre-auto key that pinned a theme forever
+            var p = JSON.parse(localStorage.getItem('theme-pick') || 'null');
+            if (p && Date.now() < p.until) return p;
+            localStorage.removeItem('theme-pick');
+          } catch (e) {}
+          return null;
+        }
+
+        var timer;
+        function apply() {
+          var now = Date.now();
+          var a = auto(now);
+          var p = read();
+          var theme = p ? p.theme : a.theme;
+          var changed = root.dataset.theme && root.dataset.theme !== theme;
+          root.dataset.theme = theme;
+          if (changed) document.dispatchEvent(new CustomEvent('themechange', { detail: theme }));
+          clearTimeout(timer);
+          timer = setTimeout(apply, Math.min((p ? p.until : a.next) - now + 1000, 2147483647));
+        }
+
+        window.__theme = {
+          apply: apply,
+          // A manual choice, kept until the next sunrise/sunset.
+          pick: function (theme) {
+            try {
+              localStorage.setItem('theme-pick', JSON.stringify({ theme: theme, until: auto(Date.now()).next }));
+            } catch (e) {}
+            apply();
+          },
         };
+
         apply();
         document.addEventListener('astro:after-swap', apply);
+        document.addEventListener('visibilitychange', function () {
+          if (document.visibilityState === 'visible') apply();
+        });
       })();
     </script>
     <title>{title}</title>
