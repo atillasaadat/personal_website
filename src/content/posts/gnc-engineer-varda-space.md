@@ -61,7 +61,16 @@ Varda has flown a growing cadence of W-Series capsules. The footage below, from 
 
 I am the **GNC Responsible Engineer for W-8 and W-9**, owning the GNC system for both vehicles from analysis through flight. Both capsules launched successfully together on SpaceX's **Transporter-18** rideshare, and every flight like this moves Varda closer to the higher mission cadence that makes returning material from space routine: more capsules, flying more often, each one landing exactly where it should.
 
-Along the way, I was named to the Society of Manufacturing Engineers' (SME) 2026 **30 Under 30** class, which Varda shared in the post below.
+I was on console in Varda's new mission control for the W-8/W-9 launch and early orbit phase (LEOPS), bringing both capsules up to nominal on orbit.
+
+<div class="li-embeds">
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:ugcPost:7515450319753879552" title="W-8 and W-9 mission control on LinkedIn" height="610" style="--li-h-narrow: 700px" frameborder="0" allowfullscreen loading="lazy"></iframe>
+    <figcaption>🖥️ On console for W-8/W-9 LEOPS in Varda's new mission control (that's me in the first photo!)</figcaption>
+  </figure>
+</div>
+
+Along the way, I was named to the [Society of Manufacturing Engineers' (SME) 2026 **30 Under 30** class](https://digitaleditions.walsworth.com/publication/?i=869875&p=46&view=issueViewer), which Varda shared in the post below.
 
 <div class="li-embeds">
   <figure class="li-embed">
