@@ -193,6 +193,19 @@
         "1 66747U 25276CK  26029.50003471  .00061250  00000+0  19219-2 0  9998",
         "2 66747  97.3254 105.2764 0377831  18.6804 254.3538 14.84484964  4380",
         "W-SERIES 5"
+      ],
+      // W-8 and W-9 (Transporter-18). Name null on purpose: the live
+      // Celestrak name is used, still "TRANSPORTER-18 OBJECT A/B" until the
+      // objects are identified.
+      "100883": [
+        "1 A0883U 26227A   26287.27883610  .00002880  00000+0  14805-3 0  9996",
+        "2 A0883  97.4443 356.5794 0002816  97.7445 262.4108 15.17253692  1908",
+        null
+      ],
+      "100884": [
+        "1 A0884U 26227B   26287.27895743  .00002805  00000+0  14437-3 0  9995",
+        "2 A0884  97.4408 356.5725 0003345  91.4300 268.7317 15.17238344  1901",
+        null
       ]
     };
 
@@ -219,6 +232,8 @@
       // Varda W-Series
       { id: 66747, group: 'varda'   },   // W-SERIES 5
       { id: 64543, group: 'varda'   },   // W-SERIES 4
+      { id: 100883, group: 'varda'  },   // W-8 / W-9 (TRANSPORTER-18 OBJECT A)
+      { id: 100884, group: 'varda'  },   // W-8 / W-9 (TRANSPORTER-18 OBJECT B)
       // Other
       { id: 57392, group: 'other'   },   // LEO 3
     ];
@@ -387,7 +402,7 @@
     //     null            -> Celestrak confirmed "No GP data" (decayed)
     //     missing         -> fetch failed and no fallback exists
     // ============================================================
-    const TLE_CACHE_KEY    = 'onorbit-tle-cache-v1';
+    const TLE_CACHE_KEY    = 'onorbit-tle-cache-v2';
     const TLE_CACHE_TTL_MS = 6 * 3600 * 1000;
     const FETCH_TIMEOUT_MS = 10000;
 
@@ -398,17 +413,62 @@
         .finally(function () { clearTimeout(t); });
     }
 
+    // Celestrak serves catalog numbers above 99999 only as OMM (JSON): the
+    // TLE format has five columns for the number, so FORMAT=TLE answers
+    // "No GP data found" for them. We fetch OMM for every object and rebuild
+    // the two TLE lines (Alpha-5 numbering past 99999) for satellite.js.
+    function tleChecksum(line) {
+      let sum = 0;
+      for (const c of line) {
+        if (c >= '0' && c <= '9') sum += +c;
+        else if (c === '-') sum += 1;
+      }
+      return sum % 10;
+    }
+    function alpha5(n) {
+      if (n < 100000) return String(n).padStart(5, '0');
+      return 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(n / 10000) - 10] + String(n % 10000).padStart(4, '0');
+    }
+    // TLE implied-decimal exponent field, e.g. 1.4805e-4 -> " 14805-3"
+    function tleExp(v) {
+      if (!v) return ' 00000+0';
+      let e = Math.floor(Math.log10(Math.abs(v))) + 1;
+      let m = Math.round(Math.abs(v) / Math.pow(10, e) * 1e5);
+      if (m >= 100000) { m = 10000; e++; }
+      return (v < 0 ? '-' : ' ') + String(m).padStart(5, '0') + (e < 0 ? '-' : '+') + Math.abs(e);
+    }
+    function fixed(v, w, d) { return v.toFixed(d).padStart(w, ' '); }
+    function ommToTle(o) {
+      const num = alpha5(o.NORAD_CAT_ID);
+      const id = /^(\d{2})(\d{2})-(\d{3})(\w*)$/.exec(o.OBJECT_ID || '');
+      const intl = (id ? id[2] + id[3] + id[4] : '').padEnd(8, ' ');
+      // Parse EPOCH by hand: Date.parse would drop its microseconds.
+      const ep = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):([\d.]+)/.exec(o.EPOCH);
+      const y = +ep[1];
+      const doy = (Date.UTC(y, ep[2] - 1, +ep[3]) - Date.UTC(y, 0, 1)) / 86400000 + 1 +
+        (ep[4] * 3600 + ep[5] * 60 + parseFloat(ep[6])) / 86400;
+      const epoch = String(y % 100).padStart(2, '0') + doy.toFixed(8).padStart(12, '0');
+      const ndot = (o.MEAN_MOTION_DOT < 0 ? '-' : ' ') + Math.abs(o.MEAN_MOTION_DOT).toFixed(8).substring(1);
+      const l1 = '1 ' + num + (o.CLASSIFICATION_TYPE || 'U') + ' ' + intl + ' ' + epoch + ' ' + ndot +
+        ' ' + tleExp(o.MEAN_MOTION_DDOT) + ' ' + tleExp(o.BSTAR) + ' ' + (o.EPHEMERIS_TYPE || 0) +
+        ' ' + String(o.ELEMENT_SET_NO % 10000).padStart(4, ' ');
+      const l2 = '2 ' + num + ' ' + fixed(o.INCLINATION, 8, 4) + ' ' + fixed(o.RA_OF_ASC_NODE, 8, 4) +
+        ' ' + o.ECCENTRICITY.toFixed(7).substring(2) + ' ' + fixed(o.ARG_OF_PERICENTER, 8, 4) +
+        ' ' + fixed(o.MEAN_ANOMALY, 8, 4) + ' ' + fixed(o.MEAN_MOTION, 11, 8) +
+        String(o.REV_AT_EPOCH % 100000).padStart(5, ' ');
+      return [l1 + tleChecksum(l1), l2 + tleChecksum(l2)];
+    }
+
+    // Resolves to [line1, line2, celestrakName], or null if decayed.
     async function fetchLiveTLE(id) {
-      const url = 'https://celestrak.org/NORAD/elements/gp.php?CATNR=' + id + '&FORMAT=TLE';
+      const url = 'https://celestrak.org/NORAD/elements/gp.php?CATNR=' + id + '&FORMAT=JSON';
       const r = await fetchWithTimeout(url, FETCH_TIMEOUT_MS);
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const text = (await r.text()).trim();
       if (/no gp data/i.test(text)) return null;   // object no longer tracked -> decayed
-      const lines = text.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
-      const l1 = lines.find(function (s) { return s.indexOf('1 ') === 0; });
-      const l2 = lines.find(function (s) { return s.indexOf('2 ') === 0; });
-      if (!l1 || !l2) throw new Error('unparseable GP response');
-      return [l1, l2];
+      const omm = JSON.parse(text)[0];
+      if (!omm || !omm.EPOCH) throw new Error('unparseable GP response');
+      return ommToTle(omm).concat(omm.OBJECT_NAME || null);
     }
 
     async function loadTLEs() {
@@ -432,7 +492,9 @@
             tles[meta.id] = null;  // confirmed decayed
           } else {
             // Keep our friendly display name; Celestrak names can differ.
-            tles[meta.id] = [res[0], res[1], fb ? fb[2] : ('NORAD ' + meta.id)];
+            // Entries without one (fallback name null) take Celestrak's, so a
+            // new object picks up its official name once it is assigned.
+            tles[meta.id] = [res[0], res[1], (fb && fb[2]) || res[2] || ('NORAD ' + meta.id)];
           }
         } catch (e) {
           console.warn('TLE fetch failed for', meta.id, '- using fallback:', e && e.message);
