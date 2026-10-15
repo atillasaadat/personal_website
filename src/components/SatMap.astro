@@ -6,7 +6,14 @@
 // Performance: the globe is NOT loaded on initial page render. It auto-loads
 // the moment the section scrolls near the viewport (IntersectionObserver), so
 // the top of the page stays fast but the visitor never has to click anything.
-const satCount = 20;
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+// Counted from the SATELLITES list in satmap.html at build time, so the
+// heading follows whenever a satellite is added or removed there.
+const satmapSrc = readFileSync(join(process.cwd(), 'public/satmap.html'), 'utf8');
+const satCount = (satmapSrc.match(/\{\s*id:\s*\d+,\s*group:/g) || []).length;
+if (!satCount) throw new Error('SatMap: no SATELLITES entries found in public/satmap.html');
 ---
 <section id="satmap" class="section">
   <div class="container">
