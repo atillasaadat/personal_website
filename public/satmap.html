@@ -78,11 +78,11 @@
       <div id="decayed-items"></div>
     </div>
     <div class="section">
-      <div class="section-title">Legend <span style="text-transform:none;letter-spacing:0;color:#6a7a8a">(click to toggle)</span></div>
-      <div class="legend-item" data-group="turion" role="button" tabindex="0" aria-pressed="true" title="Toggle Turion Space"><span class="legend-dot" style="background:#4fc3f7;color:#4fc3f7"></span><span>Turion Space</span></div>
-      <div class="legend-item" data-group="varda" role="button" tabindex="0" aria-pressed="true" title="Toggle Varda W-Series"><span class="legend-dot" style="background:#ff6b6b;color:#ff6b6b"></span><span>Varda W-Series</span></div>
-      <div class="legend-item" data-group="hawkeye" role="button" tabindex="0" aria-pressed="true" title="Toggle Hawkeye360 (UTIAS SFL)"><span class="legend-dot" style="background:#f59e0b;color:#f59e0b"></span><span>Hawkeye360 (UTIAS SFL)</span></div>
-      <div class="legend-item" data-group="other" role="button" tabindex="0" aria-pressed="true" title="Toggle Other"><span class="legend-dot" style="background:#a3e635;color:#a3e635"></span><span>Other</span></div>
+      <div class="section-title">Legend <span style="text-transform:none;letter-spacing:0;color:#6a7a8a">(click to filter, click again to undo)</span></div>
+      <div class="legend-item" data-group="turion" role="button" tabindex="0" aria-pressed="false" title="Show only Turion Space"><span class="legend-dot" style="background:#4fc3f7;color:#4fc3f7"></span><span>Turion Space</span></div>
+      <div class="legend-item" data-group="varda" role="button" tabindex="0" aria-pressed="false" title="Show only Varda W-Series"><span class="legend-dot" style="background:#ff6b6b;color:#ff6b6b"></span><span>Varda W-Series</span></div>
+      <div class="legend-item" data-group="hawkeye" role="button" tabindex="0" aria-pressed="false" title="Show only Hawkeye360 (UTIAS SFL)"><span class="legend-dot" style="background:#f59e0b;color:#f59e0b"></span><span>Hawkeye360 (UTIAS SFL)</span></div>
+      <div class="legend-item" data-group="other" role="button" tabindex="0" aria-pressed="false" title="Show only Other"><span class="legend-dot" style="background:#a3e635;color:#a3e635"></span><span>Other</span></div>
     </div>
     <div id="data-source"></div>
   </div>
@@ -641,18 +641,26 @@
       return true;
     }
 
-    // ---- Legend category toggles ----
-    // Clicking (or Enter/Space on) a legend row shows/hides that category's
-    // satellites. State is tracked in groupVisible so entities added later by
-    // the async TLE load still pick up the correct visibility.
+    // ---- Legend category filter ----
+    // Every category shows until one is clicked (or Enter/Space). Clicking a
+    // category then shows only the selected ones: further clicks add more to
+    // the selection, clicking a selected one removes it, and an empty
+    // selection shows everything again. Visibility lives in groupVisible so
+    // entities added later by the async TLE load still pick it up.
+    const selectedGroups = new Set();
     function toggleGroup(el) {
       const g = el.getAttribute('data-group');
       if (!(g in groupVisible)) return;
-      const visible = !groupVisible[g];
-      groupVisible[g] = visible;
-      el.classList.toggle('legend-off', !visible);
-      el.setAttribute('aria-pressed', String(visible));
-      (entitiesByGroup[g] || []).forEach(function (ent) { ent.show = visible; });
+      if (selectedGroups.has(g)) selectedGroups.delete(g);
+      else selectedGroups.add(g);
+      document.querySelectorAll('.legend-item[data-group]').forEach(function (item) {
+        const ig = item.getAttribute('data-group');
+        const visible = selectedGroups.size === 0 || selectedGroups.has(ig);
+        groupVisible[ig] = visible;
+        item.classList.toggle('legend-off', !visible);
+        item.setAttribute('aria-pressed', String(selectedGroups.has(ig)));
+        (entitiesByGroup[ig] || []).forEach(function (ent) { ent.show = visible; });
+      });
     }
     document.querySelectorAll('.legend-item[data-group]').forEach(function (el) {
       el.addEventListener('click', function () { toggleGroup(el); });
