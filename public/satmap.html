@@ -28,10 +28,13 @@
     .section { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.07); }
     .section-title { color: #8aa; font-size: 10px; text-transform: uppercase;
                       letter-spacing: 1px; margin-bottom: 5px; }
-    #decayed-items { font-size: 11px; line-height: 1.55;
+    #decayed-items, #returned-items { font-size: 11px; line-height: 1.55;
                       font-variant-numeric: tabular-nums; }
     #decayed-items a { color: #ff9b9b; text-decoration: none; }
     #decayed-items a:hover { color: #ffcfcf; text-decoration: underline; }
+    /* Returned on purpose, so a mission-success green rather than the red */
+    #returned-items a { color: #8ee6a8; text-decoration: none; }
+    #returned-items a:hover { color: #c8f5d4; text-decoration: underline; }
     #data-source { font-size: 10px; color: #8aa; margin-top: 8px; }
     .legend-item { display: flex; align-items: center; gap: 8px; margin: 1px 0;
                    padding: 2px 5px; border-radius: 5px; cursor: pointer; user-select: none;
@@ -64,9 +67,14 @@
   <div id="info-panel">
     <h2>On-Orbit Assets</h2>
     <div class="stat"><span>On-Orbit</span><span id="count-active">&hellip;</span></div>
-    <div class="stat"><span>Decayed / Re-entered</span><span id="count-decayed">&hellip;</span></div>
+    <div class="stat"><span>Returned Reentry Vehicles</span><span id="count-returned">&hellip;</span></div>
+    <div class="stat"><span>Decayed</span><span id="count-decayed">&hellip;</span></div>
+    <div class="section" id="returned-section" style="display:none">
+      <div class="section-title">Returned Reentry Vehicles</div>
+      <div id="returned-items"></div>
+    </div>
     <div class="section" id="decayed-section" style="display:none">
-      <div class="section-title">Decayed / Re-entered</div>
+      <div class="section-title">Decayed</div>
       <div id="decayed-items"></div>
     </div>
     <div class="section">
@@ -89,7 +97,8 @@
          3. Per-satellite fallback to the embedded snapshot below if a fetch
             fails (offline, CSP block, Celestrak down).
        Celestrak returning "No GP data found" is treated as authoritative:
-       the object is no longer tracked, i.e. decayed / re-entered.
+       the object is no longer tracked, i.e. decayed / re-entered (Varda
+       capsules are listed as returned reentry vehicles, the rest as decayed).
        Refresh the fallback snapshot occasionally via tle-fetcher.html.
        Each entry: NORAD_ID: [line1, line2, displayName]
        ========================================================================= */
@@ -522,7 +531,7 @@
 
     function markDecayed(meta, tles) {
       const entry = tles[meta.id] || FALLBACK_TLES[meta.id];
-      decayed.push({ id: meta.id, name: entry ? entry[2] : null });
+      decayed.push({ id: meta.id, name: entry ? entry[2] : null, group: meta.group });
     }
 
     function addSatellite(meta, tles, newestEpochMs) {
@@ -658,6 +667,7 @@
     // ---- Async init: fetch TLEs, then populate the scene ----
     (async function init() {
       document.getElementById('count-active').textContent  = '\u2026';
+      document.getElementById('count-returned').textContent = '\u2026';
       document.getElementById('count-decayed').textContent = '\u2026';
       document.getElementById('data-source').textContent   = 'Fetching latest orbital data\u2026';
 
@@ -678,7 +688,12 @@
       }
 
       document.getElementById('count-active').textContent  = activeCount;
-      document.getElementById('count-decayed').textContent = decayed.length;
+      // Varda capsules leave orbit by design (a controlled reentry and
+      // recovery), so they are listed apart from objects that decayed.
+      const returned = decayed.filter(function (d) { return d.group === 'varda'; });
+      const lost     = decayed.filter(function (d) { return d.group !== 'varda'; });
+      document.getElementById('count-returned').textContent = returned.length;
+      document.getElementById('count-decayed').textContent  = lost.length;
 
       const srcLabel = {
         live:     'Orbital data: Celestrak (live)',
@@ -687,17 +702,20 @@
       };
       document.getElementById('data-source').textContent = srcLabel[result.source] || '';
 
-      if (decayed.length > 0) {
-        const html = decayed.map(function (d) {
+      function listGone(list, key) {
+        if (!list.length) return;
+        const html = list.map(function (d) {
           const display = d.name
             ? escapeHtml(d.name) + ' (' + d.id + ')'
             : 'NORAD ' + d.id;
           return '<a href="' + satcatUrl(d.id) + '" target="_blank" rel="noopener noreferrer">' +
                  display + '</a>';
         }).join(', ');
-        document.getElementById('decayed-section').style.display = 'block';
-        document.getElementById('decayed-items').innerHTML = html;
+        document.getElementById(key + '-section').style.display = 'block';
+        document.getElementById(key + '-items').innerHTML = html;
       }
+      listGone(returned, 'returned');
+      listGone(lost, 'decayed');
     })();
 
     // Camera: straight-down view, framed instantly (setView, not flyTo) so
