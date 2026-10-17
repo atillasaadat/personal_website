@@ -61,6 +61,12 @@ Varda has flown a growing cadence of W-Series capsules. The footage below, from 
 
 I am the **GNC Responsible Engineer for W-8 and W-9**, owning the GNC system for both vehicles from analysis through flight. Both capsules launched successfully together on SpaceX's **Transporter-18** rideshare, and every flight like this moves Varda closer to the higher mission cadence that makes returning material from space routine: more capsules, flying more often, each one landing exactly where it should.
 
+Below is the integrated Transporter-18 payload stack with the fairing halves open. One of our two capsules is the white cone near the top of the stack, flying alongside dozens of other satellites from across the industry.
+
+![The SpaceX Transporter-18 rideshare stack with the fairing open, with a Varda W-Series capsule (the white cone near the top) among the other payloads. Image: SpaceX.](/media/varda/transporter-18-stack-1.jpg)
+
+![The Transporter-18 stack from straight on, with the Varda capsule's white cone near the top. Image: SpaceX.](/media/varda/transporter-18-stack-2.jpg)
+
 I was on console in Varda's new mission control for the W-8/W-9 launch and early orbit phase (LEOPS), bringing both capsules up to nominal on orbit.
 
 <div class="li-embeds">
