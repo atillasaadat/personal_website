@@ -76,7 +76,7 @@ I was on console in Varda's new mission control for the W-8/W-9 launch and early
   </figure>
 </div>
 
-Along the way, I was named to the [Society of Manufacturing Engineers' (SME) 2026 **30 Under 30** class](https://digitaleditions.walsworth.com/publication/?i=869875&p=46&view=issueViewer), which Varda shared in the post below.
+Along the way, I was named to the [Society of Manufacturing Engineers' (SME) 2026 **30 Under 30** class](https://www.advancedmanufacturing.org/30-under-30/atilla-saadat/article_425fb821-4ce4-4879-91e9-a985f27c4ad5.html), which Varda shared in the post below.
 
 <div class="li-embeds">
   <figure class="li-embed">
