@@ -31,6 +31,6 @@
     "@resvg/resvg-js": "^2.6.2",
     "linkinator": "^8.0.4",
     "playwright": "^1.60.0",
-    "satori": "^0.26.0"
+    "satori": "^0.33.5"
   }
 }
