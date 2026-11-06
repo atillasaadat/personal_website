@@ -76,6 +76,19 @@ I was on console in Varda's new mission control for the W-8/W-9 launch and early
   </figure>
 </div>
 
+W-8 then came home with a successful reentry and landing in Australia, and W-9 is set to follow in the next few weeks.
+
+<div class="li-embeds">
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:share:7524156584353243136" title="W-8 reentry streak over Australia on LinkedIn" height="655" style="--li-h-narrow: 735px" frameborder="0" allowfullscreen loading="lazy"></iframe>
+    <figcaption>☄️ W-8's reentry streak across the night sky, the best confirmation it was back on Earth</figcaption>
+  </figure>
+  <figure class="li-embed">
+    <iframe src="https://www.linkedin.com/embed/feed/update/urn:li:share:7524306413276471296" title="W-8 capsule on the ground after landing on LinkedIn" height="615" style="--li-h-narrow: 695px" frameborder="0" allowfullscreen loading="lazy"></iframe>
+    <figcaption>🛬 W-8 on the ground in the Australian outback after a successful reentry</figcaption>
+  </figure>
+</div>
+
 Along the way, I was named to the [Society of Manufacturing Engineers' (SME) 2026 **30 Under 30** class](https://www.advancedmanufacturing.org/30-under-30/atilla-saadat/article_425fb821-4ce4-4879-91e9-a985f27c4ad5.html), which Varda shared in the post below.
 
 <div class="li-embeds">
